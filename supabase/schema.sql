@@ -266,22 +266,22 @@ CREATE POLICY "Ministry leaders and Resident Pastor insert"
 
 -- 9. Sample Seed Data for Christ Family Centre Makurdi
 INSERT INTO c3_centres (name, zone, meeting_address, host_name) VALUES
-    ('C3 Wurukum Grace Center', 'Wurukum', 'No. 14 Gboko Road, Wurukum, Makurdi', 'Bro. Terungwa Aondo'),
-    ('C3 High-Level Faith Hub', 'High-Level', 'Opposite Modern Market Roundabout, High-Level, Makurdi', 'Sis. Deborah Iorhemen'),
-    ('C3 North-Bank Victory Cell', 'North-Bank', 'Near University of Agriculture Road, North-Bank, Makurdi', 'Bro. Emmanuel Agbo'),
-    ('C3 Kanshio Covenant Assembly', 'Kanshio', 'Behind Federal Low Cost, Kanshio, Makurdi', 'Elder Peter Ochigbo'),
-    ('C3 Judges Quarters Peace Unit', 'Judges Quarters', 'Plot 8, GRA Extension, Judges Quarters, Makurdi', 'Deaconess Comfort Chia'),
-    ('C3 Modern Market Dominion Cell', 'Modern Market', 'Beside Railway Line, Modern Market Area, Makurdi', 'Bro. Joshua Terver')
+    ('Nyiman C3', 'Nyiman', 'Off Abu King Shuluwa Road, Nyiman Layout, Makurdi', 'Bro. Terungwa Aondo'),
+    ('George Akume Way C3', 'George Akume Way', 'Near New Garage Junction, George Akume Way, Makurdi', 'Sis. Deborah Iorhemen'),
+    ('North Bank C3', 'North Bank', 'Near University of Agriculture Road, North Bank, Makurdi', 'Bro. Emmanuel Agbo'),
+    ('Gyado Villa C3', 'Gyado Villa', 'Beside Benue State University 2nd Gate, Gyado Villa, Makurdi', 'Elder Peter Ochigbo'),
+    ('Welfare Quarters C3', 'Welfare Quarters', 'Welfare Quarters Road, Near Civil Service Commission, Makurdi', 'Deaconess Comfort Chia'),
+    ('Old GRA C3', 'Old GRA', 'Kashim Ibrahim Road, Old GRA, Makurdi', 'Bro. Joshua Terver')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO service_teams (name, code, description) VALUES
-    ('Choir (Sound of Judah)', 'CHOIR', 'Praise & Worship team leading prophetic atmosphere and worship sessions'),
-    ('Ushering & Greeters', 'USHERS', 'Sanctuary seating, welcoming congregants, offering coordination'),
-    ('Media & Technical', 'MEDIA', 'Audio engineering, livestreaming, multi-camera videography, projection'),
-    ('Sanctuary Keepers', 'SANCTUARY', 'Beautification, cleanliness, and ambiance of church auditorium and surroundings'),
-    ('Protocol & Pastoral Care', 'PROTOCOL', 'Guest ministers reception, pulpit protocol, orderliness during altarcalls'),
-    ('Traffic & Security', 'SECURITY', 'Vehicle parking management, perimeter security, surveillance'),
-    ('Welfare & Follow-Up', 'WELFARE', 'Visitor assimilation, care for needy members, home checkups')
+    ('Prayer & Counselling', 'PRAYER', 'Pre-service intercession, prayer cover for services, follow-up counselling and deliverance ministry'),
+    ('Music', 'MUSIC', 'Praise, prophetic worship and choir leading the atmosphere of the Holy Spirit during all services'),
+    ('Production', 'PRODUCTION', 'Sound engineering, acoustics, live multi-camera broadcast, lighting, LED screens and podcasts'),
+    ('Welfare', 'WELFARE', 'Hospitality to first timers, benevolence support to members, food pantry, and visitation care'),
+    ('Ushering & Protocol', 'USHERS', 'Sanctuary seating, welcoming congregants, offering coordination, and guest ministers reception'),
+    ('Sanctuary Keepers', 'SANCTUARY', 'Beautification, cleanliness, and ambiance of the church auditorium and church facility'),
+    ('Traffic & Security', 'SECURITY', 'Vehicle parking management, perimeter security, surveillance, and safe congregation dispersal')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO ministry_teams (name, code, description, target_audience) VALUES

@@ -52,7 +52,7 @@ interface ChurchContextType {
 
 const ChurchContext = createContext<ChurchContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'cfc_makurdi_reporting_state_v1';
+const LOCAL_STORAGE_KEY = 'cfc_makurdi_reporting_state_v2';
 
 export function ChurchProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // default to Resident Pastor
@@ -127,7 +127,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
 
     const newReport: C3Report = {
       id: `c3rep-${Date.now()}`,
-      c3Id: data.c3Id || currentUser.c3Id || 'c3-wurukum',
+      c3Id: data.c3Id || currentUser.c3Id || 'c3-nyiman',
       c3Name: matchedC3 ? matchedC3.name : currentUser.c3Name || 'C3 Centre',
       zone: matchedC3 ? matchedC3.zone : 'Makurdi Zone',
       meetingDate: data.meetingDate || new Date().toISOString().split('T')[0],
@@ -163,7 +163,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
 
     const newReport: ServiceTeamReport = {
       id: `st-rep-${Date.now()}`,
-      teamId: data.teamId || currentUser.serviceTeamId || 'team-choir',
+      teamId: data.teamId || currentUser.serviceTeamId || 'team-prayer',
       teamName: matchedTeam ? matchedTeam.name : currentUser.serviceTeamName || 'Service Team',
       serviceDate: data.serviceDate || new Date().toISOString().split('T')[0],
       serviceType: data.serviceType || 'first_service',

@@ -456,7 +456,7 @@ export default function ChurchDashboard() {
                         C3 Community Churches
                       </span>
                       <span className="text-[11px] text-emerald-700">
-                        {c3Centres.length} Centers in Wurukum, High-Level, North-Bank...
+                        {c3Centres.length} Centers in Nyiman, George Akume Way, North Bank...
                       </span>
                     </div>
                     <button
@@ -656,12 +656,12 @@ export default function ChurchDashboard() {
                     className="bg-transparent font-medium text-slate-800 focus:outline-none"
                   >
                     <option value="All">All Makurdi Zones</option>
-                    <option value="Wurukum">Wurukum</option>
-                    <option value="High-Level">High-Level</option>
-                    <option value="North-Bank">North-Bank</option>
-                    <option value="Kanshio">Kanshio</option>
-                    <option value="Judges Quarters">Judges Quarters</option>
-                    <option value="Modern Market">Modern Market</option>
+                    <option value="Nyiman">Nyiman</option>
+                    <option value="George Akume Way">George Akume Way</option>
+                    <option value="North Bank">North Bank</option>
+                    <option value="Gyado Villa">Gyado Villa</option>
+                    <option value="Welfare Quarters">Welfare Quarters</option>
+                    <option value="Old GRA">Old GRA</option>
                   </select>
                 </div>
 
