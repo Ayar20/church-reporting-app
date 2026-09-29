@@ -167,22 +167,24 @@ export function exportConsolidatedPastoralBriefPDF(
 ) {
   const doc = new jsPDF({ orientation: 'portrait' });
 
-  // Cover / Header Banner
-  doc.setFillColor(15, 23, 42); // navy
-  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 36, 'F');
+  // Cover / Header Banner with CFM Brand Blue
+  doc.setFillColor(10, 113, 158); // #0a719e CFM Brand Blue
+  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 38, 'F');
 
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('CHRIST FAMILY CENTRE MAKURDI', 14, 15);
+  doc.text('CHRIST FAMILY MINISTRIES', 14, 13);
 
   doc.setFontSize(11);
-  doc.setTextColor(245, 158, 11); // Amber
-  doc.text('WEEKLY EXECUTIVE PASTORAL REPORT & CONSOLIDATED BRIEF', 14, 23);
+  doc.setTextColor(255, 240, 0); // CFM Radiant Yellow
+  doc.text('Christ Family Centre Makurdi • Weekly Pastoral Report', 14, 21);
 
   doc.setFontSize(8.5);
-  doc.setTextColor(203, 213, 225);
-  doc.text(`Report Period: September 2026 | Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 30);
+  doc.setTextColor(224, 242, 254);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Motto: "Love is King • Raising a Happy & Successful People"', 14, 28);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')} | Senior Pastors: Pastors Arome & Avese Tokula`, 14, 34);
 
   // Executive KPI summary box
   doc.setTextColor(15, 23, 42);

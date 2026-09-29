@@ -152,16 +152,16 @@ export default function ChurchDashboard() {
       <Navbar />
 
       {/* Role Banner / Context Bar */}
-      <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/60 text-white py-3.5 px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-r from-[#0a719e] via-[#139fdd] to-[#0a719e] border-b border-[#085a7e] text-white py-3.5 px-4 sm:px-6 lg:px-8 shadow-inner">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-300 animate-pulse" />
             <div>
-              <span className="text-xs text-slate-300">Active View: </span>
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <span className="text-xs text-sky-100">Logged in as: </span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md ml-1">
                 {currentUser.role.replace(/_/g, ' ')}
               </span>
-              <span className="text-xs text-slate-400 ml-2">
+              <span className="text-xs text-sky-100 ml-2 font-medium">
                 ({currentUser.fullName})
               </span>
             </div>
@@ -169,32 +169,32 @@ export default function ChurchDashboard() {
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {currentUser.role === 'resident_pastor' && (
-              <span className="bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30">
-                👑 Full Executive Oversight & Final Approval Rights
+              <span className="bg-white/20 text-yellow-200 px-3 py-1 rounded-full border border-white/20 font-medium">
+                👑 Makurdi Executive Oversight & Final Approval Rights
               </span>
             )}
             {currentUser.role === 'associate_pastor_c3' && (
-              <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">
-                🛡️ Supervising Makurdi Community Churches (C3s)
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
+                🛡️ Supervising Community Churches (C3s) across Makurdi
               </span>
             )}
             {currentUser.role === 'associate_pastor_service_teams' && (
-              <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
                 🛠️ Supervising Service Teams Operations & Rosters
               </span>
             )}
             {currentUser.role === 'c3_minister' && (
-              <span className="bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30">
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
                 ⛪ Assigned C3: {currentUser.c3Name || 'Makurdi Cell'}
               </span>
             )}
             {currentUser.role === 'service_team_leader' && (
-              <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30">
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
                 🎵 Assigned Team: {currentUser.serviceTeamName || 'Service Unit'}
               </span>
             )}
             {currentUser.role === 'ministry_leader' && (
-              <span className="bg-rose-500/20 text-rose-300 px-3 py-1 rounded-full border border-rose-500/30">
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
                 🤝 Assigned Fellowship: {currentUser.ministryName || 'Ministry'}
               </span>
             )}
@@ -214,7 +214,7 @@ export default function ChurchDashboard() {
               {(currentUser.role === 'service_team_leader' || isPastor) && (
                 <button
                   onClick={() => setTeamModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white font-semibold text-xs transition shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Submit Team Report</span>
@@ -1310,12 +1310,32 @@ export default function ChurchDashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 px-4 sm:px-6 lg:px-8 mt-12 text-center text-xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© {new Date().getFullYear()} Christ Family Centre Makurdi. All rights reserved.</p>
-          <p className="text-slate-500">
-            C3 Community Churches • Service Teams • Fellowship Ministries Reporting Portal
-          </p>
+      <footer className="bg-[#0a719e] border-t border-[#085a7e] text-sky-100 py-8 px-4 sm:px-6 lg:px-8 mt-12 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-white text-sm tracking-wide">
+              CHRIST FAMILY CENTRE MAKURDI
+            </span>
+            <span className="text-yellow-300 font-semibold">•</span>
+            <span className="text-sky-200">A Branch of Christ Family Ministries</span>
+          </div>
+          <div className="flex items-center gap-4 text-sky-200">
+            <span className="italic text-yellow-300">"Raising a Happy & Successful People"</span>
+            <span>•</span>
+            <span className="font-medium text-white">Love is King</span>
+            <span>•</span>
+            <a
+              href="https://christfamilyministries.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:text-yellow-300 underline underline-offset-2 transition"
+            >
+              christfamilyministries.org
+            </a>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-white/10 text-center text-sky-200/80 text-[11px]">
+          © {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome & Avese Tokula. Reporting Portal for Makurdi Branch.
         </div>
       </footer>
 
