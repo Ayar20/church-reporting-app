@@ -36,11 +36,14 @@ interface ChurchContextType {
   ministryReports: MinistryReport[];
   generalServices: GeneralServiceReport[];
   metrics: DashboardMetricSummary;
+  isLoggedIn: boolean;
   switchUser: (userId: string) => void;
   switchRole: (role: UserRole) => void;
+  logout: () => void;
   submitC3Report: (data: Partial<C3Report>) => C3Report;
   submitServiceTeamReport: (data: Partial<ServiceTeamReport>) => ServiceTeamReport;
   submitMinistryReport: (data: Partial<MinistryReport>) => MinistryReport;
+  submitGeneralServiceReport: (data: Partial<GeneralServiceReport>) => GeneralServiceReport;
   updateReportReview: (
     type: 'c3' | 'service_team' | 'ministry',
     reportId: string,
@@ -63,7 +66,8 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
   const [c3Reports, setC3Reports] = useState<C3Report[]>(MOCK_C3_REPORTS);
   const [serviceTeamReports, setServiceTeamReports] = useState<ServiceTeamReport[]>(MOCK_SERVICE_TEAM_REPORTS);
   const [ministryReports, setMinistryReports] = useState<MinistryReport[]>(MOCK_MINISTRY_REPORTS);
-  const [generalServices] = useState<GeneralServiceReport[]>(MOCK_GENERAL_SERVICES);
+  const [generalServices, setGeneralServices] = useState<GeneralServiceReport[]>(MOCK_GENERAL_SERVICES);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Load from LocalStorage if available
   useEffect(() => {
@@ -105,14 +109,21 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     const user = DEMO_USERS.find((u) => u.id === userId);
     if (user) {
       setCurrentUser(user);
+      setIsLoggedIn(true);
       saveState(c3Reports, serviceTeamReports, ministryReports, user);
     }
+  };
+
+  const logout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const switchRole = (role: UserRole) => {
     const user = DEMO_USERS.find((u) => u.role === role);
     if (user) {
       setCurrentUser(user);
+      setIsLoggedIn(true);
       saveState(c3Reports, serviceTeamReports, ministryReports, user);
     }
   };
@@ -317,6 +328,30 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     activeTeamsCount: serviceTeams.length,
   };
 
+  const submitGeneralServiceReport = (data: Partial<GeneralServiceReport>): GeneralServiceReport => {
+    const newReport: GeneralServiceReport = {
+      id: `gen-${Date.now()}`,
+      serviceDate: data.serviceDate || new Date().toISOString().split('T')[0],
+      serviceType: data.serviceType || 'first_service',
+      preacher: data.preacher || currentUser.fullName,
+      sermonTitle: data.sermonTitle || 'Sunday Service',
+      maleCount: Number(data.maleCount || 0),
+      femaleCount: Number(data.femaleCount || 0),
+      childrenCount: Number(data.childrenCount || 0),
+      totalAttendance: Number(data.totalAttendance || 0),
+      firstTimersCount: Number(data.firstTimersCount || 0),
+      newConvertsCount: Number(data.newConvertsCount || 0),
+      totalOffering: Number(data.totalOffering || 0),
+      totalTithe: Number(data.totalTithe || 0),
+      notes: data.notes || '',
+      submittedByName: currentUser.fullName,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newReport, ...generalServices];
+    setGeneralServices(updated);
+    return newReport;
+  };
+
   return (
     <ChurchContext.Provider
       value={{
@@ -330,11 +365,14 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         ministryReports,
         generalServices,
         metrics,
+        isLoggedIn,
         switchUser,
         switchRole,
+        logout,
         submitC3Report,
         submitServiceTeamReport,
         submitMinistryReport,
+        submitGeneralServiceReport,
         updateReportReview,
         resetToSampleData,
       }}

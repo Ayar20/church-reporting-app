@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
@@ -31,11 +31,36 @@ import {
   Award,
   BookOpen,
 } from 'lucide-react';
-import { AttendanceTrendChart, C3ZoneBreakdownChart } from '@/components/DashboardCharts';
+import dynamic from 'next/dynamic';
+
+const AttendanceTrendChart = dynamic(
+  () => import('@/components/DashboardCharts').then((mod) => mod.AttendanceTrendChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 bg-slate-100 rounded-2xl animate-pulse flex items-center justify-center text-xs text-slate-400">
+        Loading Trends...
+      </div>
+    ),
+  }
+);
+
+const C3ZoneBreakdownChart = dynamic(
+  () => import('@/components/DashboardCharts').then((mod) => mod.C3ZoneBreakdownChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 bg-slate-100 rounded-2xl animate-pulse flex items-center justify-center text-xs text-slate-400">
+        Loading C3 Performance...
+      </div>
+    ),
+  }
+);
 import C3ReportModal from '@/components/C3ReportModal';
 import ServiceTeamReportModal from '@/components/ServiceTeamReportModal';
 import MinistryReportModal from '@/components/MinistryReportModal';
 import ReviewModal from '@/components/ReviewModal';
+import SundayServiceModal from '@/components/SundayServiceModal';
 import {
   exportC3ReportsToPDF,
   exportC3ReportsToExcel,
@@ -44,7 +69,7 @@ import {
   exportConsolidatedPastoralBriefPDF,
 } from '@/lib/exportUtils';
 
-type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports';
+type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service';
 
 export default function ChurchDashboard() {
   const {
@@ -56,6 +81,7 @@ export default function ChurchDashboard() {
     c3Reports,
     serviceTeamReports,
     ministryReports,
+    generalServices,
   } = useChurch();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -64,6 +90,7 @@ export default function ChurchDashboard() {
   const [c3ModalOpen, setC3ModalOpen] = useState(false);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [ministryModalOpen, setMinistryModalOpen] = useState(false);
+  const [sundayModalOpen, setSundayModalOpen] = useState(false);
   const [reviewModalData, setReviewModalData] = useState<{
     isOpen: boolean;
     type: 'c3' | 'service_team' | 'ministry';
@@ -170,32 +197,32 @@ export default function ChurchDashboard() {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {currentUser.role === 'resident_pastor' && (
               <span className="bg-white/20 text-yellow-200 px-3 py-1 rounded-full border border-white/20 font-medium">
-                👑 Makurdi Executive Oversight & Final Approval Rights
+                ðŸ‘‘ Makurdi Executive Oversight & Final Approval Rights
               </span>
             )}
             {currentUser.role === 'associate_pastor_c3' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                🛡️ Supervising Community Churches (C3s) across Makurdi
+                ðŸ›¡ï¸ Supervising Community Churches (C3s) across Makurdi
               </span>
             )}
             {currentUser.role === 'associate_pastor_service_teams' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                🛠️ Supervising Service Teams Operations & Rosters
+                ðŸ› ï¸ Supervising Service Teams Operations & Rosters
               </span>
             )}
             {currentUser.role === 'c3_minister' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                ⛪ Assigned C3: {currentUser.c3Name || 'Makurdi Cell'}
+                â›ª Assigned C3: {currentUser.c3Name || 'Makurdi Cell'}
               </span>
             )}
             {currentUser.role === 'service_team_leader' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                🎵 Assigned Team: {currentUser.serviceTeamName || 'Service Unit'}
+                ðŸŽµ Assigned Team: {currentUser.serviceTeamName || 'Service Unit'}
               </span>
             )}
             {currentUser.role === 'ministry_leader' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                🤝 Assigned Fellowship: {currentUser.ministryName || 'Ministry'}
+                ðŸ¤ Assigned Fellowship: {currentUser.ministryName || 'Ministry'}
               </span>
             )}
 
@@ -419,7 +446,7 @@ export default function ChurchDashboard() {
                 </span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-black text-slate-900 truncate">
-                    ₦{(metrics.totalGiving / 1000).toFixed(0)}k
+                    â‚¦{(metrics.totalGiving / 1000).toFixed(0)}k
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block truncate">
@@ -551,7 +578,7 @@ export default function ChurchDashboard() {
                           <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
                             <span>Attendance: <strong>{r.totalAttendance}</strong></span>
                             <span>First Timers: <strong>{r.firstTimers}</strong></span>
-                            <span>Offering: <strong>₦{r.offeringAmount.toLocaleString()}</strong></span>
+                            <span>Offering: <strong>â‚¦{r.offeringAmount.toLocaleString()}</strong></span>
                           </div>
                         </div>
                       </div>
@@ -709,7 +736,7 @@ export default function ChurchDashboard() {
                       <th className="py-3 px-4 text-center">Total</th>
                       <th className="py-3 px-4 text-center">1st Timers</th>
                       <th className="py-3 px-4 text-center">Converts</th>
-                      <th className="py-3 px-4">Giving (₦)</th>
+                      <th className="py-3 px-4">Giving (â‚¦)</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Minister</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -745,7 +772,7 @@ export default function ChurchDashboard() {
                           {r.newConverts}
                         </td>
                         <td className="py-3.5 px-4 font-medium text-slate-800 whitespace-nowrap">
-                          ₦{r.offeringAmount.toLocaleString()}
+                          â‚¦{r.offeringAmount.toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {getStatusBadge(r.status)}
@@ -1029,7 +1056,7 @@ export default function ChurchDashboard() {
                           Offering
                         </span>
                         <span className="text-sm font-bold text-slate-800">
-                          ₦{m.offeringAmount.toLocaleString()}
+                          â‚¦{m.offeringAmount.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -1307,6 +1334,111 @@ export default function ChurchDashboard() {
           </div>
         )}
 
+
+        {/* ========================================================================= */}
+        {/* TAB: SUNDAY SERVICE RECORDS                                                */}
+        {/* ========================================================================= */}
+        {activeTab === 'sunday_service' && (
+          <div className="space-y-5 animate-fadeIn">
+
+            {/* Header */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-[#0a719e]" />
+                  Sunday Service Records — CFC Makurdi
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Full-church weekly attendance, giving, first timers and altar call converts
+                </p>
+              </div>
+              {isPastor && (
+                <button
+                  onClick={() => setSundayModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-bold text-sm transition shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Record Sunday Service
+                </button>
+              )}
+            </div>
+
+            {/* Service Records Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Service Type</th>
+                      <th className="py-3 px-4">Preacher</th>
+                      <th className="py-3 px-4 max-w-[200px]">Sermon Title</th>
+                      <th className="py-3 px-4 text-center">M / F / Kids</th>
+                      <th className="py-3 px-4 text-center">Total</th>
+                      <th className="py-3 px-4 text-center">1st Timers</th>
+                      <th className="py-3 px-4 text-center">Converts</th>
+                      <th className="py-3 px-4 text-right">Offering (?)</th>
+                      <th className="py-3 px-4 text-right">Tithe (?)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {generalServices.map((s) => (
+                      <tr key={s.id} className="hover:bg-sky-50/30 transition">
+                        <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">{s.serviceDate}</td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-semibold capitalize">
+                            {s.serviceType.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">{s.preacher}</td>
+                        <td className="py-3.5 px-4 text-slate-600 max-w-[200px] truncate" title={s.sermonTitle}>{s.sermonTitle}</td>
+                        <td className="py-3.5 px-4 text-center text-slate-500 whitespace-nowrap">
+                          {s.maleCount} / {s.femaleCount} / {s.childrenCount}
+                        </td>
+                        <td className="py-3.5 px-4 text-center font-black text-[#0a719e] whitespace-nowrap text-sm">{s.totalAttendance}</td>
+                        <td className="py-3.5 px-4 text-center font-semibold text-amber-700 whitespace-nowrap">{s.firstTimersCount}</td>
+                        <td className="py-3.5 px-4 text-center font-semibold text-rose-600 whitespace-nowrap">{s.newConvertsCount}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-slate-800 whitespace-nowrap">?{s.totalOffering.toLocaleString()}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-emerald-700 whitespace-nowrap">?{s.totalTithe.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary Row */}
+              {generalServices.length > 0 && (
+                <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Avg Attendance</p>
+                    <p className="text-base font-black text-slate-900">
+                      {Math.round(generalServices.reduce((a, s) => a + s.totalAttendance, 0) / generalServices.length)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total First Timers</p>
+                    <p className="text-base font-black text-amber-700">
+                      {generalServices.reduce((a, s) => a + s.firstTimersCount, 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total Converts</p>
+                    <p className="text-base font-black text-rose-600">
+                      {generalServices.reduce((a, s) => a + s.newConvertsCount, 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total Giving</p>
+                    <p className="text-base font-black text-emerald-700">
+                      ?{(generalServices.reduce((a, s) => a + s.totalOffering + s.totalTithe, 0) / 1000).toFixed(0)}k
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
       </main>
 
       {/* Footer */}
@@ -1316,14 +1448,14 @@ export default function ChurchDashboard() {
             <span className="font-bold text-white text-sm tracking-wide">
               CHRIST FAMILY CENTRE MAKURDI
             </span>
-            <span className="text-yellow-300 font-semibold">•</span>
+            <span className="text-yellow-300 font-semibold">â€¢</span>
             <span className="text-sky-200">A Branch of Christ Family Ministries</span>
           </div>
           <div className="flex items-center gap-4 text-sky-200">
             <span className="italic text-yellow-300">"Raising a Happy & Successful People"</span>
-            <span>•</span>
+            <span>â€¢</span>
             <span className="font-medium text-white">Love is King</span>
-            <span>•</span>
+            <span>â€¢</span>
             <a
               href="https://christfamilyministries.org"
               target="_blank"
@@ -1335,7 +1467,7 @@ export default function ChurchDashboard() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-white/10 text-center text-sky-200/80 text-[11px]">
-          © {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome & Avese Tokula. Reporting Portal for Makurdi Branch.
+          Â© {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome & Avese Tokula. Reporting Portal for Makurdi Branch.
         </div>
       </footer>
 
@@ -1355,6 +1487,11 @@ export default function ChurchDashboard() {
         onClose={() => setMinistryModalOpen(false)}
       />
 
+
+      <SundayServiceModal
+        isOpen={sundayModalOpen}
+        onClose={() => setSundayModalOpen(false)}
+      />
       <ReviewModal
         isOpen={reviewModalData.isOpen}
         onClose={() =>

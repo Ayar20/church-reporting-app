@@ -1,9 +1,9 @@
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { C3Report, ServiceTeamReport, MinistryReport, DashboardMetricSummary } from './types';
 
-export function exportC3ReportsToExcel(reports: C3Report[], filename = 'CFC_Makurdi_C3_Reports.xlsx') {
+export async function exportC3ReportsToExcel(reports: C3Report[], filename = 'CFC_Makurdi_C3_Reports.xlsx') {
+  if (typeof window === 'undefined') return;
+  const XLSX = await import('xlsx');
+
   const rows = reports.map((r) => ({
     'Meeting Date': r.meetingDate,
     'C3 Center': r.c3Name,
@@ -31,7 +31,10 @@ export function exportC3ReportsToExcel(reports: C3Report[], filename = 'CFC_Maku
   XLSX.writeFile(workbook, filename);
 }
 
-export function exportServiceTeamReportsToExcel(reports: ServiceTeamReport[], filename = 'CFC_Makurdi_Service_Teams.xlsx') {
+export async function exportServiceTeamReportsToExcel(reports: ServiceTeamReport[], filename = 'CFC_Makurdi_Service_Teams.xlsx') {
+  if (typeof window === 'undefined') return;
+  const XLSX = await import('xlsx');
+
   const rows = reports.map((r) => ({
     'Service Date': r.serviceDate,
     'Team Name': r.teamName,
@@ -54,22 +57,25 @@ export function exportServiceTeamReportsToExcel(reports: ServiceTeamReport[], fi
   XLSX.writeFile(workbook, filename);
 }
 
-export function exportC3ReportsToPDF(reports: C3Report[], title = 'C3 Community Churches Report') {
+export async function exportC3ReportsToPDF(reports: C3Report[], title = 'C3 Community Churches Report') {
+  if (typeof window === 'undefined') return;
+  const { jsPDF } = await import('jspdf');
+  const autoTable = (await import('jspdf-autotable')).default;
+
   const doc = new jsPDF({ orientation: 'landscape' });
 
-  // Header styling
-  doc.setFillColor(15, 23, 42); // slate-900
+  // Header styling with CFM Brand Blue
+  doc.setFillColor(10, 113, 158); // #0a719e
   doc.rect(0, 0, doc.internal.pageSize.getWidth(), 28, 'F');
 
   doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('CHRIST FAMILY CENTRE MAKURDI', 14, 12);
+  doc.text('CHRIST FAMILY MINISTRIES', 14, 12);
 
   doc.setFontSize(10);
-  doc.setTextColor(226, 232, 240);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${title} | Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
+  doc.setTextColor(255, 240, 0); // CFM Yellow
+  doc.text(`Christ Family Centre Makurdi • ${title} | ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
 
   const tableBody = reports.map((r) => [
     r.meetingDate,
@@ -90,7 +96,7 @@ export function exportC3ReportsToPDF(reports: C3Report[], title = 'C3 Community 
     startY: 34,
     theme: 'grid',
     headStyles: {
-      fillColor: [30, 58, 138], // royal blue
+      fillColor: [10, 113, 158],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
@@ -107,22 +113,25 @@ export function exportC3ReportsToPDF(reports: C3Report[], title = 'C3 Community 
   doc.save(`CFC_Makurdi_C3_${Date.now()}.pdf`);
 }
 
-export function exportServiceTeamReportsToPDF(reports: ServiceTeamReport[]) {
+export async function exportServiceTeamReportsToPDF(reports: ServiceTeamReport[]) {
+  if (typeof window === 'undefined') return;
+  const { jsPDF } = await import('jspdf');
+  const autoTable = (await import('jspdf-autotable')).default;
+
   const doc = new jsPDF({ orientation: 'landscape' });
 
   // Header styling
-  doc.setFillColor(15, 23, 42);
+  doc.setFillColor(10, 113, 158);
   doc.rect(0, 0, doc.internal.pageSize.getWidth(), 28, 'F');
 
   doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('CHRIST FAMILY CENTRE MAKURDI', 14, 12);
+  doc.text('CHRIST FAMILY MINISTRIES', 14, 12);
 
   doc.setFontSize(10);
-  doc.setTextColor(226, 232, 240);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Service Teams Operational Report | Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
+  doc.setTextColor(255, 240, 0);
+  doc.text(`Christ Family Centre Makurdi • Service Teams Operational Report | ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
 
   const tableBody = reports.map((r) => [
     r.serviceDate,
@@ -142,7 +151,7 @@ export function exportServiceTeamReportsToPDF(reports: ServiceTeamReport[]) {
     startY: 34,
     theme: 'grid',
     headStyles: {
-      fillColor: [15, 76, 129],
+      fillColor: [10, 113, 158],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 8.5,
@@ -159,12 +168,16 @@ export function exportServiceTeamReportsToPDF(reports: ServiceTeamReport[]) {
   doc.save(`CFC_Makurdi_Service_Teams_${Date.now()}.pdf`);
 }
 
-export function exportConsolidatedPastoralBriefPDF(
+export async function exportConsolidatedPastoralBriefPDF(
   metrics: DashboardMetricSummary,
   c3Reports: C3Report[],
   teamReports: ServiceTeamReport[],
   ministryReports: MinistryReport[]
 ) {
+  if (typeof window === 'undefined') return;
+  const { jsPDF } = await import('jspdf');
+  const autoTable = (await import('jspdf-autotable')).default;
+
   const doc = new jsPDF({ orientation: 'portrait' });
 
   // Cover / Header Banner with CFM Brand Blue
@@ -230,7 +243,7 @@ export function exportConsolidatedPastoralBriefPDF(
     body: c3SummaryRows,
     startY: finalY + 4,
     theme: 'grid',
-    headStyles: { fillColor: [30, 58, 138], fontSize: 8.5 },
+    headStyles: { fillColor: [10, 113, 158], fontSize: 8.5 },
     styles: { fontSize: 8, cellPadding: 2.5 },
   });
 
@@ -254,7 +267,7 @@ export function exportConsolidatedPastoralBriefPDF(
       body: minRows,
       startY: nextY + 4,
       theme: 'grid',
-      headStyles: { fillColor: [180, 83, 9], fontSize: 8.5 },
+      headStyles: { fillColor: [237, 32, 36], fontSize: 8.5 },
       styles: { fontSize: 8, cellPadding: 2.5 },
     });
   }

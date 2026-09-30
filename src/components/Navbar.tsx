@@ -9,13 +9,25 @@ import {
   RotateCcw,
   Download,
   CheckCircle2,
-  Heart,
-  Sparkles,
+  LogOut,
 } from 'lucide-react';
 import { exportConsolidatedPastoralBriefPDF } from '@/lib/exportUtils';
+import NotificationCenter from './NotificationCenter';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
-  const { currentUser, allUsers, switchUser, metrics, c3Reports, serviceTeamReports, ministryReports, resetToSampleData } = useChurch();
+  const {
+    currentUser,
+    allUsers,
+    switchUser,
+    metrics,
+    c3Reports,
+    serviceTeamReports,
+    ministryReports,
+    resetToSampleData,
+    logout,
+  } = useChurch();
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getRoleBadge = (role: UserRole) => {
@@ -43,11 +55,16 @@ export default function Navbar() {
     exportConsolidatedPastoralBriefPDF(metrics, c3Reports, serviceTeamReports, ministryReports);
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-[#0a719e] border-b border-[#085a7e] text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          
+
           {/* Official Ministry Logo & Branch Identity */}
           <div className="flex items-center gap-3.5">
             <div className="bg-white/95 rounded-xl p-1.5 shadow-sm ring-1 ring-white/30 flex items-center justify-center shrink-0">
@@ -71,16 +88,16 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-[11px] text-sky-100 font-light tracking-wide flex items-center gap-1.5">
-                <span>Raising a Happy & Successful People</span>
+                <span>Raising a Happy &amp; Successful People</span>
                 <span className="text-yellow-300">•</span>
                 <span className="italic font-medium text-yellow-200">Love is King</span>
               </p>
             </div>
           </div>
 
-          {/* Right Action Bar: Quick Pastoral Export & Role Switcher */}
-          <div className="flex items-center gap-3">
-            
+          {/* Right Action Bar */}
+          <div className="flex items-center gap-2.5">
+
             {/* Quick Export Brief (visible to Pastors) */}
             {(currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
               <button
@@ -89,11 +106,14 @@ export default function Navbar() {
                 title="Download Executive Pastoral PDF Brief"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Pastoral Brief (PDF)</span>
+                <span>Pastoral Brief</span>
               </button>
             )}
 
-            {/* Quick Switch Role Dropdown */}
+            {/* Notification Bell */}
+            <NotificationCenter />
+
+            {/* Role Switcher Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -126,11 +146,11 @@ export default function Navbar() {
                         Interactive Role Switcher
                       </p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Test roles, permissions & approval workflows
+                        Test roles, permissions &amp; approval workflows
                       </p>
                     </div>
 
-                    <div className="max-h-72 overflow-y-auto py-1">
+                    <div className="max-h-64 overflow-y-auto py-1">
                       {allUsers.map((u) => {
                         const isCurrent = u.id === currentUser.id;
                         const roleInfo = getRoleBadge(u.role);
@@ -180,11 +200,18 @@ export default function Navbar() {
                         className="text-[11px] font-medium text-slate-600 hover:text-red-600 flex items-center gap-1 transition px-2 py-1"
                       >
                         <RotateCcw className="w-3 h-3" />
-                        Reset Mock Data
+                        Reset Data
                       </button>
-                      <span className="text-[10px] text-slate-400">
-                        Makurdi Branch
-                      </span>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setDropdownOpen(false);
+                        }}
+                        className="text-[11px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1 transition px-2 py-1"
+                      >
+                        <LogOut className="w-3 h-3" />
+                        Sign Out
+                      </button>
                     </div>
                   </div>
                 </>
