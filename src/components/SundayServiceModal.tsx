@@ -11,6 +11,11 @@ interface Props {
 }
 
 const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  connect_to_life_first: 'Connect to Life Service (1st Service)',
+  connect_to_life_second: 'Connect to Life Service (2nd Service)',
+  connect_to_life_combined: 'Connect to Life Service (Combined)',
+  prayer_and_communion: 'Prayer & Communion Service (Last Sunday of Month - Combined)',
+  c3_midweek: 'Midweek Service (Held in C3 Cells)',
   first_service: 'First Service (Main)',
   second_service: 'Second Service',
   combined_service: 'Combined Service',
@@ -25,7 +30,7 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
 
   const [form, setForm] = useState({
     serviceDate: today,
-    serviceType: 'first_service' as ServiceType,
+    serviceType: 'connect_to_life_first' as ServiceType,
     preacher: '',
     sermonTitle: '',
     maleCount: '',
@@ -110,8 +115,8 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
               <Church className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Sunday Service Report</h2>
-              <p className="text-xs text-sky-100">Christ Family Centre Makurdi — Weekly Service Record</p>
+              <h2 className="text-sm font-bold text-white">Connect to Life &amp; Communion Service Report</h2>
+              <p className="text-xs text-sky-100">Christ Family Centre Makurdi — Connect to Life &amp; Monthly Prayer &amp; Communion</p>
             </div>
           </div>
           <button

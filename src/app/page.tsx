@@ -144,6 +144,47 @@ export default function ChurchDashboard() {
     }
   };
 
+  const getServiceTypeBadge = (type: string) => {
+    switch (type) {
+      case 'connect_to_life_first':
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-semibold whitespace-nowrap">
+            Connect to Life (1st)
+          </span>
+        );
+      case 'connect_to_life_second':
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-semibold whitespace-nowrap">
+            Connect to Life (2nd)
+          </span>
+        );
+      case 'connect_to_life_combined':
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[11px] font-semibold whitespace-nowrap">
+            Connect to Life (Combined)
+          </span>
+        );
+      case 'prayer_and_communion':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-bold border border-emerald-300 whitespace-nowrap">
+            Prayer &amp; Communion (Last Sun Combined)
+          </span>
+        );
+      case 'c3_midweek':
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[11px] font-semibold whitespace-nowrap">
+            C3 Midweek Service
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-semibold capitalize whitespace-nowrap">
+            {type.replace(/_/g, ' ')}
+          </span>
+        );
+    }
+  };
+
   // Filtered reports
   const filteredC3Reports = c3Reports.filter((r) => {
     const matchesZone = c3ZoneFilter === 'All' || r.zone === c3ZoneFilter;
@@ -289,7 +330,7 @@ export default function ChurchDashboard() {
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Sunday Services</span>
+            <span>Connect to Life Services</span>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
               {generalServices.length}
             </span>
@@ -304,7 +345,7 @@ export default function ChurchDashboard() {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Community Churches (C3s)</span>
+            <span>C3 Midweek Services</span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-800/40 text-emerald-100">
               {c3Reports.length}
             </span>
@@ -383,7 +424,7 @@ export default function ChurchDashboard() {
               
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                  Sunday Service
+                  Connect to Life
                 </span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-black text-slate-900">
@@ -392,13 +433,13 @@ export default function ChurchDashboard() {
                   <span className="text-[11px] font-bold text-emerald-600">+5.7%</span>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Last Sunday Worship
+                  Sunday / Monthly Communion
                 </span>
               </div>
 
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                  C3 Attendance
+                  C3 Midweek
                 </span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-black text-emerald-700">
@@ -407,7 +448,7 @@ export default function ChurchDashboard() {
                   <span className="text-[11px] font-bold text-emerald-600">6 Cells</span>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Community Churches
+                  Wednesday Cell Gatherings
                 </span>
               </div>
 
@@ -681,10 +722,10 @@ export default function ChurchDashboard() {
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Users className="w-5 h-5 text-emerald-600" />
-                  Community Churches (C3s) Weekly Reporting
+                  C3 Midweek Services &amp; Cell Fellowships
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Cell fellowship attendance, soul winning, and financial stewardship across Makurdi
+                  Weekly Midweek services held across the 6 Community Churches in Makurdi (Nyiman, George Akume Way, North Bank, Gyado Villa, Welfare Quarters, Old GRA)
                 </p>
               </div>
 
@@ -733,7 +774,7 @@ export default function ChurchDashboard() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-sm transition"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>New C3 Report</span>
+                  <span>New Midweek C3 Report</span>
                 </button>
               </div>
             </div>
@@ -1361,10 +1402,10 @@ export default function ChurchDashboard() {
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-[#0a719e]" />
-                  Sunday Service Records — CFC Makurdi
+                  Connect to Life &amp; Communion Services — CFC Makurdi
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Full-church weekly attendance, giving, first timers and altar call converts
+                  Weekly Connect to Life Sunday Services &amp; Monthly Prayer &amp; Communion (Last Sunday of every month — all C3s gather in one place)
                 </p>
               </div>
               {isPastor && (
@@ -1373,7 +1414,7 @@ export default function ChurchDashboard() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-bold text-sm transition shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  Record Sunday Service
+                  Record Service
                 </button>
               )}
             </div>
@@ -1401,9 +1442,7 @@ export default function ChurchDashboard() {
                       <tr key={s.id} className="hover:bg-sky-50/30 transition">
                         <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">{s.serviceDate}</td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-semibold capitalize">
-                            {s.serviceType.replace(/_/g, ' ')}
-                          </span>
+                          {getServiceTypeBadge(s.serviceType)}
                         </td>
                         <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">{s.preacher}</td>
                         <td className="py-3.5 px-4 text-slate-600 max-w-[200px] truncate" title={s.sermonTitle}>{s.sermonTitle}</td>

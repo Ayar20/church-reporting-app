@@ -14,6 +14,11 @@ export type ReportStatus =
   | 'revision_requested';
 
 export type ServiceType =
+  | 'connect_to_life_first'
+  | 'connect_to_life_second'
+  | 'connect_to_life_combined'
+  | 'prayer_and_communion'
+  | 'c3_midweek'
   | 'first_service'
   | 'second_service'
   | 'combined_service'

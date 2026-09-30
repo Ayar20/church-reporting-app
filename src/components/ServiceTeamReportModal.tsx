@@ -54,7 +54,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
         {/* Modal Header */}
         <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
               <Wrench className="w-4 h-4" />
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                 <select
                   value={teamId}
                   onChange={(e) => setTeamId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   {serviceTeams.map((t) => (
@@ -115,7 +115,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                   type="date"
                   value={serviceDate}
                   onChange={(e) => setServiceDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -129,12 +129,13 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
               <select
                 value={serviceType}
                 onChange={(e) => setServiceType(e.target.value as ServiceType)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="first_service">1st Sunday Service</option>
-                <option value="second_service">2nd Sunday Service</option>
-                <option value="combined_service">Combined Sunday Celebration</option>
-                <option value="midweek_service">Wednesday Midweek Service</option>
+                <option value="connect_to_life_first">Connect to Life Service (1st Service)</option>
+                <option value="connect_to_life_second">Connect to Life Service (2nd Service)</option>
+                <option value="connect_to_life_combined">Connect to Life Service (Combined)</option>
+                <option value="prayer_and_communion">Prayer &amp; Communion Service (Last Sunday of Month)</option>
+                <option value="c3_midweek">Midweek Service (Held in C3s)</option>
                 <option value="special_meeting">Special Conference / Vigil</option>
               </select>
             </div>
@@ -183,7 +184,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                 placeholder="e.g. Set up stage acoustics, managed seating of 700 congregants, coordinated offering collection..."
                 value={tasksCompleted}
                 onChange={(e) => setTasksCompleted(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -198,7 +199,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                 placeholder="Microphones, audio mixers, cameras, air conditioners, generator, badges, communion trays..."
                 value={equipmentStatus}
                 onChange={(e) => setEquipmentStatus(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -214,7 +215,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                   placeholder="Any delays, crowding, sound hitches..."
                   value={challengesEncountered}
                   onChange={(e) => setChallengesEncountered(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -227,7 +228,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                   placeholder="Cables, batteries, visitor cards, cleaning supplies..."
                   value={urgentNeeds}
                   onChange={(e) => setUrgentNeeds(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -243,7 +244,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-md transition"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-md transition"
               >
                 Submit Team Report
               </button>
