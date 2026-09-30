@@ -93,18 +93,26 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Service Team *
                 </label>
-                <select
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  {serviceTeams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                {currentUser.role === 'service_team_leader' ? (
+                  /* Service Team Leaders are locked to their assigned team */
+                  <div className="w-full px-3 py-2 text-sm rounded-lg border border-blue-300 bg-blue-50 text-blue-900 font-semibold flex items-center gap-2">
+                    <span>🎵</span>
+                    <span>{serviceTeams.find((t) => t.id === currentUser.serviceTeamId)?.name ?? currentUser.serviceTeamName ?? 'Your Team'}</span>
+                  </div>
+                ) : (
+                  <select
+                    value={teamId}
+                    onChange={(e) => setTeamId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    {serviceTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>

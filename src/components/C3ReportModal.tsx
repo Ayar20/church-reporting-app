@@ -102,18 +102,26 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   C3 Community Church *
                 </label>
-                <select
-                  value={c3Id}
-                  onChange={(e) => setC3Id(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  required
-                >
-                  {c3Centres.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.zone})
-                    </option>
-                  ))}
-                </select>
+                {currentUser.role === 'c3_minister' ? (
+                  /* C3 Ministers are locked to their assigned C3 */
+                  <div className="w-full px-3 py-2 text-sm rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 font-semibold flex items-center gap-2">
+                    <span>⛪</span>
+                    <span>{c3Centres.find((c) => c.id === currentUser.c3Id)?.name ?? currentUser.c3Name ?? 'Your C3'}</span>
+                  </div>
+                ) : (
+                  <select
+                    value={c3Id}
+                    onChange={(e) => setC3Id(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  >
+                    {c3Centres.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.zone})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>

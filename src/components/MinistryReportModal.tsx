@@ -94,18 +94,26 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Fellowship Ministry *
                 </label>
-                <select
-                  value={ministryId}
-                  onChange={(e) => setMinistryId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
-                  required
-                >
-                  {ministryTeams.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+                {currentUser.role === 'ministry_leader' ? (
+                  /* Ministry Leaders are locked to their assigned fellowship */
+                  <div className="w-full px-3 py-2 text-sm rounded-lg border border-teal-300 bg-teal-50 text-teal-900 font-semibold flex items-center gap-2">
+                    <span>🤝</span>
+                    <span>{ministryTeams.find((m) => m.id === currentUser.ministryId)?.name ?? currentUser.ministryName ?? 'Your Ministry'}</span>
+                  </div>
+                ) : (
+                  <select
+                    value={ministryId}
+                    onChange={(e) => setMinistryId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
+                    required
+                  >
+                    {ministryTeams.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>

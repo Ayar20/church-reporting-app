@@ -84,7 +84,25 @@ export default function ChurchDashboard() {
     generalServices,
   } = useChurch();
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  // Determine the default landing tab per role
+  const getDefaultTab = (): ActiveTab => {
+    switch (currentUser.role) {
+      case 'resident_pastor':
+      case 'associate_pastor_c3':
+      case 'associate_pastor_service_teams':
+        return 'overview';
+      case 'c3_minister':
+        return 'c3';
+      case 'service_team_leader':
+        return 'service_teams';
+      case 'ministry_leader':
+        return 'ministries';
+      default:
+        return 'overview';
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(getDefaultTab());
   
   // Modals state
   const [c3ModalOpen, setC3ModalOpen] = useState(false);
@@ -108,6 +126,28 @@ export default function ChurchDashboard() {
 
   const isPastor = currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor');
   const isResidentPastor = currentUser.role === 'resident_pastor';
+  const isAssocPastorC3 = currentUser.role === 'associate_pastor_c3';
+  const isAssocPastorTeams = currentUser.role === 'associate_pastor_service_teams';
+  const isC3Minister = currentUser.role === 'c3_minister';
+  const isServiceTeamLeader = currentUser.role === 'service_team_leader';
+  const isMinistryLeader = currentUser.role === 'ministry_leader';
+
+  // -------------------------------------------------------------------------
+  // ROLE-BASED TAB VISIBILITY
+  // Resident Pastor:    all tabs
+  // Assoc Pastor C3:    overview, sunday, c3, approvals, exports
+  // Assoc Pastor Teams: overview, sunday, service_teams, approvals, exports
+  // C3 Minister:        c3 (own C3 only), sunday (read-only)
+  // Service Team Leader: service_teams (own team only)
+  // Ministry Leader:    ministries (own ministry only)
+  // -------------------------------------------------------------------------
+  const canSeeOverview      = isPastor;
+  const canSeeSundayService = isPastor || isC3Minister;
+  const canSeeC3Tab         = isPastor || isC3Minister;
+  const canSeeTeamsTab      = isPastor || isServiceTeamLeader;
+  const canSeeMinistriesTab = isPastor || isMinistryLeader;
+  const canSeeApprovals     = isPastor;
+  const canSeeExports       = isPastor;
 
   // Helper status color - Blue, Green, Black, White, Red ONLY where necessary
   const getStatusBadge = (status: ReportStatus) => {
@@ -185,34 +225,74 @@ export default function ChurchDashboard() {
     }
   };
 
-  // Filtered reports
+  // -------------------------------------------------------------------------
+  // ROLE-SCOPED DATA FILTERING
+  // C3 Ministers see ONLY their own C3's reports.
+  // Associate Pastor (C3) sees ALL C3 reports.
+  // Resident Pastor sees ALL reports.
+  // Service Team Leaders see ONLY their own team's reports.
+  // Associate Pastor (Teams) sees ALL team reports.
+  // Ministry Leaders see ONLY their own ministry's reports.
+  // -------------------------------------------------------------------------
+
   const filteredC3Reports = c3Reports.filter((r) => {
+    // Scope to own C3 for c3_minister
+    const matchesRole = isC3Minister
+      ? r.c3Id === currentUser.c3Id
+      : true;
     const matchesZone = c3ZoneFilter === 'All' || r.zone === c3ZoneFilter;
     const matchesSearch =
       r.c3Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.topicTaught.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.submittedByName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesZone && matchesSearch;
+    return matchesRole && matchesZone && matchesSearch;
   });
 
   const filteredTeamReports = serviceTeamReports.filter((r) => {
+    // Scope to own team for service_team_leader
+    const matchesRole = isServiceTeamLeader
+      ? r.teamId === currentUser.serviceTeamId
+      : true;
     const matchesTeam = serviceTeamFilter === 'All' || r.teamName === serviceTeamFilter;
     const matchesSearch =
       r.teamName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.tasksCompleted.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.submittedByName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTeam && matchesSearch;
+    return matchesRole && matchesTeam && matchesSearch;
   });
 
+  const filteredMinistryReports = ministryReports.filter((r) => {
+    // Scope to own ministry for ministry_leader
+    return isMinistryLeader ? r.ministryId === currentUser.ministryId : true;
+  });
+
+  // Approval queue — scoped by associate role
   const pendingApprovalReports = [
     ...c3Reports
-      .filter((r) => r.status === 'submitted' || r.status === 'reviewed_by_associate')
+      .filter((r) => {
+        if (!canSeeApprovals) return false;
+        // Assoc Pastor (C3) only sees C3 reports needing review
+        // Resident Pastor sees everything pending
+        const statusOk = r.status === 'submitted' || r.status === 'reviewed_by_associate';
+        if (isResidentPastor) return statusOk;
+        if (isAssocPastorC3) return r.status === 'submitted';
+        return false;
+      })
       .map((r) => ({ ...r, itemType: 'c3' as const })),
     ...serviceTeamReports
-      .filter((r) => r.status === 'submitted' || r.status === 'reviewed_by_associate')
+      .filter((r) => {
+        if (!canSeeApprovals) return false;
+        const statusOk = r.status === 'submitted' || r.status === 'reviewed_by_associate';
+        if (isResidentPastor) return statusOk;
+        if (isAssocPastorTeams) return r.status === 'submitted';
+        return false;
+      })
       .map((r) => ({ ...r, itemType: 'service_team' as const })),
     ...ministryReports
-      .filter((r) => r.status === 'submitted')
+      .filter((r) => {
+        if (!canSeeApprovals) return false;
+        return r.status === 'submitted';
+      })
       .map((r) => ({ ...r, itemType: 'ministry' as const })),
   ];
 
@@ -307,81 +387,92 @@ export default function ChurchDashboard() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs — role-gated */}
         <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'overview'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>Executive Overview</span>
-          </button>
 
-          <button
-            onClick={() => setActiveTab('sunday_service')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'sunday_service'
-                ? 'bg-[#0a719e] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Connect to Life Services</span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
-              {generalServices.length}
-            </span>
-          </button>
+          {canSeeOverview && (
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'overview'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Executive Overview</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('c3')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'c3'
-                ? 'bg-emerald-700 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>C3 Midweek Services</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-800/40 text-emerald-100">
-              {c3Reports.length}
-            </span>
-          </button>
+          {canSeeSundayService && (
+            <button
+              onClick={() => setActiveTab('sunday_service')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'sunday_service'
+                  ? 'bg-[#0a719e] text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Connect to Life Services</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
+                {generalServices.length}
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('service_teams')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'service_teams'
-                ? 'bg-[#0a719e] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <Wrench className="w-4 h-4" />
-            <span>Service Teams</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#085a7e] text-sky-100">
-              {serviceTeamReports.length}
-            </span>
-          </button>
+          {canSeeC3Tab && (
+            <button
+              onClick={() => setActiveTab('c3')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'c3'
+                  ? 'bg-emerald-700 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>{isC3Minister ? `${currentUser.c3Name ?? 'My C3'} — Reports` : 'C3 Midweek Services'}</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-800/40 text-emerald-100">
+                {filteredC3Reports.length}
+              </span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('ministries')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'ministries'
-                ? 'bg-teal-700 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <Heart className="w-4 h-4" />
-            <span>Fellowship Ministries</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-800/40 text-teal-100">
-              {ministryReports.length}
-            </span>
-          </button>
+          {canSeeTeamsTab && (
+            <button
+              onClick={() => setActiveTab('service_teams')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'service_teams'
+                  ? 'bg-[#0a719e] text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              <span>{isServiceTeamLeader ? `${currentUser.serviceTeamName ?? 'My Team'} — Reports` : 'Service Teams'}</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#085a7e] text-sky-100">
+                {filteredTeamReports.length}
+              </span>
+            </button>
+          )}
 
-          {isPastor && (
+          {canSeeMinistriesTab && (
+            <button
+              onClick={() => setActiveTab('ministries')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'ministries'
+                  ? 'bg-teal-700 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Heart className="w-4 h-4" />
+              <span>{isMinistryLeader ? `${currentUser.ministryName ?? 'My Ministry'} — Reports` : 'Fellowship Ministries'}</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-800/40 text-teal-100">
+                {filteredMinistryReports.length}
+              </span>
+            </button>
+          )}
+
+          {canSeeApprovals && (
             <button
               onClick={() => setActiveTab('approvals')}
               className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
@@ -392,25 +483,28 @@ export default function ChurchDashboard() {
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Pastoral Approval Hub</span>
-              {metrics.pendingApprovalsCount > 0 && (
+              {pendingApprovalReports.length > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-900 text-sky-100">
-                  {metrics.pendingApprovalsCount}
+                  {pendingApprovalReports.length}
                 </span>
               )}
             </button>
           )}
 
-          <button
-            onClick={() => setActiveTab('exports')}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
-              activeTab === 'exports'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            <span>Reports &amp; Exports</span>
-          </button>
+          {canSeeExports && (
+            <button
+              onClick={() => setActiveTab('exports')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+                activeTab === 'exports'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Download className="w-4 h-4" />
+              <span>Reports &amp; Exports</span>
+            </button>
+          )}
+
         </div>
 
         {/* ========================================================================= */}
@@ -1070,7 +1164,7 @@ export default function ChurchDashboard() {
 
             {/* Ministry Reports Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {ministryReports.map((m) => (
+              {filteredMinistryReports.map((m) => (
                 <div key={m.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
