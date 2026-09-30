@@ -82,9 +82,9 @@ function buildNotifications(
         type: 'ministry',
         title: `${r.ministryName}`,
         body: r.status === 'submitted'
-          ? `Ministry report "${r.reportTitle}" submitted for pastoral review.`
+          ? `Ministry team report "${r.reportTitle}" submitted for pastoral review.`
           : r.status === 'approved_by_resident_pastor'
-          ? `Your ministry report "${r.reportTitle}" has been approved! ✅`
+          ? `Your ministry team report "${r.reportTitle}" has been approved! ✅`
           : `Pastoral feedback on your report: please review and resubmit.`,
         status: r.status,
         timestamp: r.updatedAt,

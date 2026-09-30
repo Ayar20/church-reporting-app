@@ -376,7 +376,7 @@ export default function ChurchDashboard() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs transition shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Submit Ministry Report</span>
+                  <span>Submit Ministry Team Report</span>
                 </button>
               )}
             </div>
@@ -1157,7 +1157,7 @@ export default function ChurchDashboard() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs shadow-sm transition"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>New Ministry Report</span>
+                  <span>Submit Ministry Team Report</span>
                 </button>
               </div>
             </div>
