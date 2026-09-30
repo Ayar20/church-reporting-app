@@ -9,22 +9,29 @@ import { DEMO_USERS } from '@/lib/mockData';
 
 // Demo credential map: email -> password (for prototype)
 const DEMO_CREDENTIALS: Record<string, string> = {
-  'pastor.james@cfcmakurdi.org': 'resident2024',
-  'pastor.sarah@cfcmakurdi.org': 'associate2024',
-  'pastor.daniel@cfcmakurdi.org': 'associate2024',
-  'bro.emeka@cfcmakurdi.org': 'minister2024',
-  'bro.abu@cfcmakurdi.org': 'minister2024',
-  'sis.grace@cfcmakurdi.org': 'minister2024',
-  'bro.tunde@cfcmakurdi.org': 'minister2024',
-  'bro.pius@cfcmakurdi.org': 'minister2024',
-  'sis.amaka@cfcmakurdi.org': 'minister2024',
-  'bro.moses@cfcmakurdi.org': 'leader2024',
-  'sis.faith@cfcmakurdi.org': 'leader2024',
-  'bro.peter@cfcmakurdi.org': 'leader2024',
-  'sis.joy@cfcmakurdi.org': 'leader2024',
-  'deacon.chris@cfcmakurdi.org': 'leader2024',
-  'bro.samuel@cfcmakurdi.org': 'leader2024',
-  'sis.mercy@cfcmakurdi.org': 'leader2024',
+  // Resident Pastor
+  'resident.pastor@cfcmakurdi.org': 'resident2024',
+  // Associate Pastors
+  'assoc.c3@cfcmakurdi.org': 'associate2024',
+  'assoc.teams@cfcmakurdi.org': 'associate2024',
+  // C3 Ministers
+  'faith.nyiman@cfcmakurdi.org': 'minister2024',
+  'joshua.gakume@cfcmakurdi.org': 'minister2024',
+  'timothy.northbank@cfcmakurdi.org': 'minister2024',
+  'peter.gyadovilla@cfcmakurdi.org': 'minister2024',
+  'comfort.welfareqtrs@cfcmakurdi.org': 'minister2024',
+  'paul.oldgra@cfcmakurdi.org': 'minister2024',
+  // Service Team Leaders
+  'prayer.lead@cfcmakurdi.org': 'leader2024',
+  'music.lead@cfcmakurdi.org': 'leader2024',
+  'production.lead@cfcmakurdi.org': 'leader2024',
+  'welfare.lead@cfcmakurdi.org': 'leader2024',
+  'ushering.lead@cfcmakurdi.org': 'leader2024',
+  // Ministry Leaders
+  'men.fellowship@cfcmakurdi.org': 'leader2024',
+  'women.fellowship@cfcmakurdi.org': 'leader2024',
+  'youth.fellowship@cfcmakurdi.org': 'leader2024',
+  'children.church@cfcmakurdi.org': 'leader2024',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -52,21 +59,23 @@ export default function LoginPage() {
     setIsLoading(true);
 
     // Simulate async auth check
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
 
-    const expectedPass = DEMO_CREDENTIALS[email.toLowerCase().trim()];
-    if (!expectedPass || expectedPass !== password) {
-      setError('Invalid email or password. Please check your credentials and try again.');
+    const normalizedEmail = email.toLowerCase().trim();
+    // Find matching user
+    const user = DEMO_USERS.find(
+      (u) => u.email.toLowerCase() === normalizedEmail
+    );
+    if (!user) {
+      setError('User account not found. Please choose one of the sample accounts below.');
       setIsLoading(false);
       return;
     }
 
-    // Find matching user
-    const user = DEMO_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-    );
-    if (!user) {
-      setError('User account not found. Contact the church administrator.');
+    const expectedPass = DEMO_CREDENTIALS[normalizedEmail] || 'password123';
+    // Accept user-specific password, or universal test passwords
+    if (password !== expectedPass && password !== 'cfc2024' && password !== 'password123') {
+      setError(`Invalid password. For demo testing, you can use "${expectedPass}" or "cfc2024".`);
       setIsLoading(false);
       return;
     }
@@ -136,7 +145,7 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. pastor.james@cfcmakurdi.org"
+                    placeholder="e.g. resident.pastor@cfcmakurdi.org"
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#139fdd] focus:border-transparent transition"
                     required
                     autoComplete="email"
@@ -155,7 +164,7 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Enter password (e.g. cfc2024)"
                     className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#139fdd] focus:border-transparent transition"
                     required
                     autoComplete="current-password"
@@ -167,6 +176,59 @@ export default function LoginPage() {
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Fill Demo Credentials */}
+              <div className="pt-1">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Click to Auto-fill Demo Account:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('resident.pastor@cfcmakurdi.org');
+                      setPassword('resident2024');
+                      setError('');
+                    }}
+                    className="text-[11px] font-medium px-2 py-1 rounded-md bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition"
+                  >
+                    👑 Resident Pastor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('faith.nyiman@cfcmakurdi.org');
+                      setPassword('minister2024');
+                      setError('');
+                    }}
+                    className="text-[11px] font-medium px-2 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition"
+                  >
+                    ⛪ Nyiman C3
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('assoc.teams@cfcmakurdi.org');
+                      setPassword('associate2024');
+                      setError('');
+                    }}
+                    className="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition"
+                  >
+                    🛠️ Service Teams Pastor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('music.lead@cfcmakurdi.org');
+                      setPassword('leader2024');
+                      setError('');
+                    }}
+                    className="text-[11px] font-medium px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition"
+                  >
+                    🎵 Music Lead
                   </button>
                 </div>
               </div>
