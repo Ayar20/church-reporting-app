@@ -267,10 +267,10 @@ export default function ChurchDashboard() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
+        <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-200">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
               activeTab === 'overview'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -281,8 +281,23 @@ export default function ChurchDashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('sunday_service')}
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+              activeTab === 'sunday_service'
+                ? 'bg-[#0a719e] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Sunday Services</span>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
+              {generalServices.length}
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('c3')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
               activeTab === 'c3'
                 ? 'bg-emerald-700 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -297,7 +312,7 @@ export default function ChurchDashboard() {
 
           <button
             onClick={() => setActiveTab('service_teams')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
               activeTab === 'service_teams'
                 ? 'bg-[#0a719e] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -312,7 +327,7 @@ export default function ChurchDashboard() {
 
           <button
             onClick={() => setActiveTab('ministries')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
               activeTab === 'ministries'
                 ? 'bg-teal-700 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -328,7 +343,7 @@ export default function ChurchDashboard() {
           {isPastor && (
             <button
               onClick={() => setActiveTab('approvals')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
                 activeTab === 'approvals'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -345,23 +360,8 @@ export default function ChurchDashboard() {
           )}
 
           <button
-            onClick={() => setActiveTab('sunday_service')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
-              activeTab === 'sunday_service'
-                ? 'bg-[#0a719e] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Sunday Services</span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
-              {generalServices.length}
-            </span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('exports')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
               activeTab === 'exports'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
