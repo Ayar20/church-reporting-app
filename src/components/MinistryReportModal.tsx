@@ -55,7 +55,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
         {/* Modal Header */}
         <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
               <Heart className="w-4 h-4" />
             </div>
             <div>
@@ -63,7 +63,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 Submit Fellowship Ministry Report
               </h3>
               <p className="text-xs text-slate-400">
-                Men of Faith, 31st Ladies, or Children's Church meeting highlights
+                Men of Faith, 31st Ladies, or Children&apos;s Church meeting highlights
               </p>
             </div>
           </div>
@@ -97,7 +97,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 <select
                   value={ministryId}
                   onChange={(e) => setMinistryId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                   required
                 >
                   {ministryTeams.map((m) => (
@@ -116,7 +116,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                   type="date"
                   value={meetingDate}
                   onChange={(e) => setMeetingDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                   required
                 />
               </div>
@@ -132,7 +132,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 placeholder="e.g. Monthly Men Breakfast & Wealth Summit / Daughters of Zion Vigil"
                 value={reportTitle}
                 onChange={(e) => setReportTitle(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                 required
               />
             </div>
@@ -189,48 +189,48 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 placeholder="Provide details on teaching, discussions, welfare packages, activities carried out..."
                 value={activitiesSummary}
                 onChange={(e) => setActivitiesSummary(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                 required
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Spiritual Highlights & Testimonies
+                Spiritual Highlights &amp; Testimonies
               </label>
               <textarea
                 rows={2}
                 placeholder="Spiritual impartation, healings, declarations..."
                 value={spiritualHighlights}
                 onChange={(e) => setSpiritualHighlights(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Upcoming Programs & Next Meeting
+                  Upcoming Programs &amp; Next Meeting
                 </label>
                 <textarea
                   rows={2}
                   placeholder="Dates, venue, key targets..."
                   value={upcomingPrograms}
                   onChange={(e) => setUpcomingPrograms(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Pastoral Requests & Support
+                  Pastoral Requests &amp; Support
                 </label>
                 <textarea
                   rows={2}
                   placeholder="Logistics, bus support, hall approval..."
                   value={challengesAndRequests}
                   onChange={(e) => setChallengesAndRequests(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0a719e]"
                 />
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm shadow-md transition"
+                className="px-5 py-2.5 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-semibold text-sm shadow-md transition"
               >
                 Submit Ministry Report
               </button>

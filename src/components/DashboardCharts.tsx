@@ -21,13 +21,13 @@ export function AttendanceTrendChart() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-bold text-slate-900 text-sm">
-            September Attendance & Mobilization Trends
+            September Attendance &amp; Mobilization Trends
           </h3>
           <p className="text-xs text-slate-500">
             Sunday Worship Services vs Midweek C3 Cell Fellowships
           </p>
         </div>
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
           Weekly Progression
         </span>
       </div>
@@ -37,16 +37,16 @@ export function AttendanceTrendChart() {
           <AreaChart data={ATTENDANCE_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorSunday" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#d97706" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#d97706" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="#0a719e" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#0a719e" stopOpacity={0.0} />
               </linearGradient>
               <linearGradient id="colorC3" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#059669" stopOpacity={0.4} />
                 <stop offset="95%" stopColor="#059669" stopOpacity={0.0} />
               </linearGradient>
               <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="#0284c7" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -66,7 +66,7 @@ export function AttendanceTrendChart() {
               type="monotone"
               dataKey="Sunday"
               name="Sunday Service"
-              stroke="#d97706"
+              stroke="#0a719e"
               strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#colorSunday)"
@@ -84,7 +84,7 @@ export function AttendanceTrendChart() {
               type="monotone"
               dataKey="Volunteers"
               name="Service Volunteers"
-              stroke="#4f46e5"
+              stroke="#0284c7"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorVol)"
@@ -130,8 +130,8 @@ export function C3ZoneBreakdownChart() {
             />
             <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
             <Bar dataKey="attendance" name="Attendance" fill="#059669" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="firstTimers" name="First Timers" fill="#d97706" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="converts" name="New Converts" fill="#dc2626" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="firstTimers" name="First Timers" fill="#0284c7" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="converts" name="New Converts" fill="#0d9488" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -22,7 +22,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full font-sans flex flex-col selection:bg-amber-500 selection:text-white">
+      <body className="min-h-full font-sans flex flex-col selection:bg-[#0a719e] selection:text-white">
         <ChurchProvider>{children}</ChurchProvider>
       </body>
     </html>

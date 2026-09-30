@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
@@ -109,7 +109,7 @@ export default function ChurchDashboard() {
   const isPastor = currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor');
   const isResidentPastor = currentUser.role === 'resident_pastor';
 
-  // Helper status color
+  // Helper status color - Blue, Green, Black, White, Red ONLY where necessary
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
       case 'approved_by_resident_pastor':
@@ -121,12 +121,13 @@ export default function ChurchDashboard() {
         );
       case 'reviewed_by_associate':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-            <Clock className="w-3 h-3 text-blue-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+            <Clock className="w-3 h-3 text-sky-600" />
             Reviewed by Associate
           </span>
         );
       case 'revision_requested':
+        // Red is used here as it indicates an error/correction requirement
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
             <AlertCircle className="w-3 h-3 text-rose-600" />
@@ -135,8 +136,8 @@ export default function ChurchDashboard() {
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-            <Clock className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+            <Clock className="w-3 h-3 text-slate-600" />
             Pending Review
           </span>
         );
@@ -182,7 +183,7 @@ export default function ChurchDashboard() {
       <section className="bg-gradient-to-r from-[#0a719e] via-[#139fdd] to-[#0a719e] border-b border-[#085a7e] text-white py-3.5 px-4 sm:px-6 lg:px-8 shadow-inner">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-300 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse" />
             <div>
               <span className="text-xs text-sky-100">Logged in as: </span>
               <span className="text-xs font-bold text-white uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md ml-1">
@@ -196,33 +197,33 @@ export default function ChurchDashboard() {
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {currentUser.role === 'resident_pastor' && (
-              <span className="bg-white/20 text-yellow-200 px-3 py-1 rounded-full border border-white/20 font-medium">
-                ðŸ‘‘ Makurdi Executive Oversight & Final Approval Rights
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
+                Makurdi Executive Oversight &amp; Final Approval Rights
               </span>
             )}
             {currentUser.role === 'associate_pastor_c3' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                ðŸ›¡ï¸ Supervising Community Churches (C3s) across Makurdi
+                Supervising Community Churches (C3s) across Makurdi
               </span>
             )}
             {currentUser.role === 'associate_pastor_service_teams' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                ðŸ› ï¸ Supervising Service Teams Operations & Rosters
+                Supervising Service Teams Operations &amp; Rosters
               </span>
             )}
             {currentUser.role === 'c3_minister' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                â›ª Assigned C3: {currentUser.c3Name || 'Makurdi Cell'}
+                Assigned C3: {currentUser.c3Name || 'Makurdi Cell'}
               </span>
             )}
             {currentUser.role === 'service_team_leader' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                ðŸŽµ Assigned Team: {currentUser.serviceTeamName || 'Service Unit'}
+                Assigned Team: {currentUser.serviceTeamName || 'Service Unit'}
               </span>
             )}
             {currentUser.role === 'ministry_leader' && (
               <span className="bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 font-medium">
-                ðŸ¤ Assigned Fellowship: {currentUser.ministryName || 'Ministry'}
+                Assigned Fellowship: {currentUser.ministryName || 'Ministry'}
               </span>
             )}
 
@@ -241,7 +242,7 @@ export default function ChurchDashboard() {
               {(currentUser.role === 'service_team_leader' || isPastor) && (
                 <button
                   onClick={() => setTeamModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white font-semibold text-xs transition shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0a719e] hover:bg-[#085a7e] text-white font-semibold text-xs transition shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Submit Team Report</span>
@@ -251,7 +252,7 @@ export default function ChurchDashboard() {
               {(currentUser.role === 'ministry_leader' || isPastor) && (
                 <button
                   onClick={() => setMinistryModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs transition shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Submit Ministry Report</span>
@@ -298,13 +299,13 @@ export default function ChurchDashboard() {
             onClick={() => setActiveTab('service_teams')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
               activeTab === 'service_teams'
-                ? 'bg-indigo-700 text-white shadow-sm'
+                ? 'bg-[#0a719e] text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
             }`}
           >
             <Wrench className="w-4 h-4" />
             <span>Service Teams</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-800/40 text-indigo-100">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#085a7e] text-sky-100">
               {serviceTeamReports.length}
             </span>
           </button>
@@ -313,13 +314,13 @@ export default function ChurchDashboard() {
             onClick={() => setActiveTab('ministries')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
               activeTab === 'ministries'
-                ? 'bg-rose-700 text-white shadow-sm'
+                ? 'bg-teal-700 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
             }`}
           >
             <Heart className="w-4 h-4" />
             <span>Fellowship Ministries</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-800/40 text-rose-100">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-800/40 text-teal-100">
               {ministryReports.length}
             </span>
           </button>
@@ -329,14 +330,14 @@ export default function ChurchDashboard() {
               onClick={() => setActiveTab('approvals')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
                 activeTab === 'approvals'
-                  ? 'bg-amber-600 text-white shadow-sm'
+                  ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Pastoral Approval Hub</span>
               {metrics.pendingApprovalsCount > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-800 text-amber-100">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-900 text-sky-100">
                   {metrics.pendingApprovalsCount}
                 </span>
               )}
@@ -344,15 +345,30 @@ export default function ChurchDashboard() {
           )}
 
           <button
+            onClick={() => setActiveTab('sunday_service')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
+              activeTab === 'sunday_service'
+                ? 'bg-[#0a719e] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Sunday Services</span>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === 'sunday_service' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'}`}>
+              {generalServices.length}
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('exports')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition shrink-0 ${
               activeTab === 'exports'
-                ? 'bg-slate-800 text-white shadow-sm'
+                ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
             }`}
           >
             <Download className="w-4 h-4" />
-            <span>Reports & Exports</span>
+            <span>Reports &amp; Exports</span>
           </button>
         </div>
 
@@ -400,7 +416,7 @@ export default function ChurchDashboard() {
                   First Timers
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-amber-600">
+                  <span className="text-2xl font-black text-sky-700">
                     {metrics.totalFirstTimers}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">Total</span>
@@ -415,13 +431,13 @@ export default function ChurchDashboard() {
                   Souls Won
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-rose-600">
+                  <span className="text-2xl font-black text-emerald-700">
                     {metrics.totalConverts}
                   </span>
-                  <span className="text-[10px] font-medium text-rose-500">Converts</span>
+                  <span className="text-[10px] font-medium text-emerald-600">Converts</span>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Sunday & C3 Altarcalls
+                  Sunday &amp; C3 Altarcalls
                 </span>
               </div>
 
@@ -430,7 +446,7 @@ export default function ChurchDashboard() {
                   Duty Volunteers
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-indigo-700">
+                  <span className="text-2xl font-black text-slate-900">
                     {metrics.totalServiceVolunteers}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">Active</span>
@@ -445,12 +461,12 @@ export default function ChurchDashboard() {
                   Reported Giving
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-black text-slate-900 truncate">
-                    â‚¦{(metrics.totalGiving / 1000).toFixed(0)}k
+                  <span className="text-xl font-black text-emerald-700 truncate">
+                    ₦{(metrics.totalGiving / 1000).toFixed(0)}k
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block truncate">
-                  Offerings & Tithes (NGN)
+                  Offerings &amp; Tithes (NGN)
                 </span>
               </div>
 
@@ -471,7 +487,7 @@ export default function ChurchDashboard() {
                   <h3 className="text-sm font-bold text-slate-900">
                     Church Organs Summary
                   </h3>
-                  <span className="text-xs text-amber-600 font-semibold">
+                  <span className="text-xs text-sky-700 font-semibold">
                     Makurdi HQ
                   </span>
                 </div>
@@ -494,35 +510,35 @@ export default function ChurchDashboard() {
                     </button>
                   </div>
 
-                  <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center justify-between">
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-indigo-950 block">
+                      <span className="text-xs font-bold text-sky-950 block">
                         Service Teams
                       </span>
-                      <span className="text-[11px] text-indigo-700">
+                      <span className="text-[11px] text-sky-700">
                         {serviceTeams.length} Operational Units on Duty
                       </span>
                     </div>
                     <button
                       onClick={() => setActiveTab('service_teams')}
-                      className="p-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500"
+                      className="p-1 rounded-lg bg-[#0a719e] text-white hover:bg-[#085a7e]"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="p-3 bg-rose-50 rounded-xl border border-rose-100 flex items-center justify-between">
+                  <div className="p-3 bg-teal-50 rounded-xl border border-teal-100 flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-rose-950 block">
+                      <span className="text-xs font-bold text-teal-950 block">
                         Ministry Fellowships
                       </span>
-                      <span className="text-[11px] text-rose-700">
+                      <span className="text-[11px] text-teal-700">
                         Men of Faith, 31st Ladies, Kingdom Kids
                       </span>
                     </div>
                     <button
                       onClick={() => setActiveTab('ministries')}
-                      className="p-1 rounded-lg bg-rose-600 text-white hover:bg-rose-500"
+                      className="p-1 rounded-lg bg-teal-700 text-white hover:bg-teal-600"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -534,7 +550,7 @@ export default function ChurchDashboard() {
                     onClick={() => exportConsolidatedPastoralBriefPDF(metrics, c3Reports, serviceTeamReports, ministryReports)}
                     className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-2 transition"
                   >
-                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Download Consolidated Weekly Brief (PDF)</span>
                   </button>
                 </div>
@@ -545,10 +561,10 @@ export default function ChurchDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      Latest Activity & Reports Stream
+                      Latest Activity &amp; Reports Stream
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Real-time submissions from C3s, Service Teams & Ministries
+                      Real-time submissions from C3s, Service Teams &amp; Ministries
                     </p>
                   </div>
                   <span className="text-xs font-bold text-slate-400">
@@ -578,7 +594,7 @@ export default function ChurchDashboard() {
                           <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
                             <span>Attendance: <strong>{r.totalAttendance}</strong></span>
                             <span>First Timers: <strong>{r.firstTimers}</strong></span>
-                            <span>Offering: <strong>â‚¦{r.offeringAmount.toLocaleString()}</strong></span>
+                            <span>Offering: <strong>₦{r.offeringAmount.toLocaleString()}</strong></span>
                           </div>
                         </div>
                       </div>
@@ -593,7 +609,7 @@ export default function ChurchDashboard() {
                                 report: r,
                               })
                             }
-                            className="text-[11px] text-amber-700 hover:text-amber-800 font-semibold"
+                            className="text-[11px] text-sky-700 hover:text-sky-900 font-semibold"
                           >
                             Review
                           </button>
@@ -605,7 +621,7 @@ export default function ChurchDashboard() {
                   {serviceTeamReports.slice(0, 2).map((st) => (
                     <div key={st.id} className="py-3 flex items-start justify-between gap-3">
                       <div className="flex items-start gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0 mt-0.5">
                           <Wrench className="w-3.5 h-3.5" />
                         </div>
                         <div>
@@ -637,7 +653,7 @@ export default function ChurchDashboard() {
                                 report: st,
                               })
                             }
-                            className="text-[11px] text-amber-700 hover:text-amber-800 font-semibold"
+                            className="text-[11px] text-sky-700 hover:text-sky-900 font-semibold"
                           >
                             Review
                           </button>
@@ -736,7 +752,7 @@ export default function ChurchDashboard() {
                       <th className="py-3 px-4 text-center">Total</th>
                       <th className="py-3 px-4 text-center">1st Timers</th>
                       <th className="py-3 px-4 text-center">Converts</th>
-                      <th className="py-3 px-4">Giving (â‚¦)</th>
+                      <th className="py-3 px-4">Giving (₦)</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Minister</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -744,7 +760,7 @@ export default function ChurchDashboard() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
                     {filteredC3Reports.map((r) => (
-                      <tr key={r.id} className="hover:bg-amber-50/30 transition">
+                      <tr key={r.id} className="hover:bg-sky-50/30 transition">
                         <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
                           {r.meetingDate}
                         </td>
@@ -765,14 +781,14 @@ export default function ChurchDashboard() {
                         <td className="py-3.5 px-4 text-center font-bold text-emerald-700 whitespace-nowrap">
                           {r.totalAttendance}
                         </td>
-                        <td className="py-3.5 px-4 text-center font-semibold text-amber-700 whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center font-semibold text-sky-700 whitespace-nowrap">
                           {r.firstTimers}
                         </td>
-                        <td className="py-3.5 px-4 text-center font-semibold text-rose-600 whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center font-semibold text-emerald-700 whitespace-nowrap">
                           {r.newConverts}
                         </td>
                         <td className="py-3.5 px-4 font-medium text-slate-800 whitespace-nowrap">
-                          â‚¦{r.offeringAmount.toLocaleString()}
+                          ₦{r.offeringAmount.toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {getStatusBadge(r.status)}
@@ -790,7 +806,7 @@ export default function ChurchDashboard() {
                                   report: r,
                                 })
                               }
-                              className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs border border-amber-200 transition"
+                              className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs border border-sky-200 transition"
                             >
                               Review
                             </button>
@@ -818,11 +834,11 @@ export default function ChurchDashboard() {
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-indigo-600" />
+                  <Wrench className="w-5 h-5 text-[#0a719e]" />
                   Service Teams Operational Reporting
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Sunday & midweek roster turnouts, operations, technical health & equipment status
+                  Sunday &amp; midweek roster turnouts, operations, technical health &amp; equipment status
                 </p>
               </div>
 
@@ -856,16 +872,16 @@ export default function ChurchDashboard() {
 
                 <button
                   onClick={() => exportServiceTeamReportsToExcel(filteredTeamReports)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-semibold text-xs transition border border-indigo-200"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs transition border border-sky-200"
                 >
-                  <Download className="w-3.5 h-3.5 text-indigo-700" />
+                  <Download className="w-3.5 h-3.5 text-sky-700" />
                   <span>Excel</span>
                 </button>
 
                 {/* Submit New Report */}
                 <button
                   onClick={() => setTeamModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-semibold text-xs shadow-sm transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Team Report</span>
@@ -873,13 +889,13 @@ export default function ChurchDashboard() {
               </div>
             </div>
 
-            {/* Service Teams Cards / Table */}
+            {/* Service Teams Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredTeamReports.map((st) => (
                 <div key={st.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                      <span className="text-[11px] font-bold text-[#0a719e] uppercase tracking-wider bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
                         {st.serviceType.replace(/_/g, ' ')}
                       </span>
                       {getStatusBadge(st.status)}
@@ -937,19 +953,19 @@ export default function ChurchDashboard() {
 
                     {/* Urgent needs if any */}
                     {st.urgentNeeds && (
-                      <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs">
-                        <span className="font-bold text-amber-900 block">Immediate Need:</span>
-                        <p className="text-amber-800">{st.urgentNeeds}</p>
+                      <div className="p-2 bg-sky-50 rounded-lg border border-sky-200 text-xs">
+                        <span className="font-bold text-sky-900 block">Immediate Need:</span>
+                        <p className="text-sky-800">{st.urgentNeeds}</p>
                       </div>
                     )}
 
                     {/* Pastoral remarks */}
                     {(st.residentPastorNotes || st.associatePastorNotes) && (
-                      <div className="p-2.5 bg-blue-50/70 rounded-lg border border-blue-200 text-xs">
-                        <span className="font-bold text-blue-900 block mb-0.5">
+                      <div className="p-2.5 bg-sky-50/70 rounded-lg border border-sky-200 text-xs">
+                        <span className="font-bold text-sky-900 block mb-0.5">
                           Pastoral Note:
                         </span>
-                        <p className="text-blue-800">
+                        <p className="text-sky-800">
                           {st.residentPastorNotes || st.associatePastorNotes}
                         </p>
                       </div>
@@ -969,7 +985,7 @@ export default function ChurchDashboard() {
                             report: st,
                           })
                         }
-                        className="px-3 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold border border-amber-200 transition"
+                        className="px-3 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
                       >
                         Review
                       </button>
@@ -992,18 +1008,18 @@ export default function ChurchDashboard() {
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-rose-600" />
+                  <Heart className="w-5 h-5 text-teal-600" />
                   Ministry Fellowships Reporting
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Men of Faith Fellowship, 31st Ladies Fellowship, and Children's Church (Kingdom Kids)
+                  Men of Faith Fellowship, 31st Ladies Fellowship, and Children&apos;s Church (Kingdom Kids)
                 </p>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setMinistryModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs shadow-sm transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Ministry Report</span>
@@ -1017,7 +1033,7 @@ export default function ChurchDashboard() {
                 <div key={m.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                      <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
                         {m.ministryName}
                       </span>
                       {getStatusBadge(m.status)}
@@ -1047,7 +1063,7 @@ export default function ChurchDashboard() {
                         <span className="text-[10px] text-slate-500 uppercase font-semibold block">
                           1st Timers
                         </span>
-                        <span className="text-base font-bold text-amber-600">
+                        <span className="text-base font-bold text-sky-700">
                           {m.firstTimers}
                         </span>
                       </div>
@@ -1055,8 +1071,8 @@ export default function ChurchDashboard() {
                         <span className="text-[10px] text-slate-500 uppercase font-semibold block">
                           Offering
                         </span>
-                        <span className="text-sm font-bold text-slate-800">
-                          â‚¦{m.offeringAmount.toLocaleString()}
+                        <span className="text-sm font-bold text-emerald-700">
+                          ₦{m.offeringAmount.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -1093,11 +1109,11 @@ export default function ChurchDashboard() {
 
                     {/* Pastoral Feedback */}
                     {m.pastoralNotes && (
-                      <div className="p-2.5 bg-blue-50/70 rounded-lg border border-blue-200 text-xs">
-                        <span className="font-bold text-blue-900 block mb-0.5">
+                      <div className="p-2.5 bg-sky-50/70 rounded-lg border border-sky-200 text-xs">
+                        <span className="font-bold text-sky-900 block mb-0.5">
                           Resident Pastor Directive:
                         </span>
-                        <p className="text-blue-800">{m.pastoralNotes}</p>
+                        <p className="text-sky-800">{m.pastoralNotes}</p>
                       </div>
                     )}
                   </div>
@@ -1115,7 +1131,7 @@ export default function ChurchDashboard() {
                             report: m,
                           })
                         }
-                        className="px-3 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold border border-amber-200 transition"
+                        className="px-3 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
                       >
                         Review
                       </button>
@@ -1137,15 +1153,15 @@ export default function ChurchDashboard() {
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-amber-600" />
-                  Pastoral Review & Approval Hub
+                  <ShieldCheck className="w-5 h-5 text-[#0a719e]" />
+                  Pastoral Review &amp; Approval Hub
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Review queue for Associate Pastors (C3s & Teams) and Resident Pastor final sign-off
+                  Review queue for Associate Pastors (C3s &amp; Teams) and Resident Pastor final sign-off
                 </p>
               </div>
 
-              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200">
+              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-sky-50 text-sky-900 border border-sky-200">
                 {pendingApprovalReports.length} Reports Awaiting Review
               </span>
             </div>
@@ -1186,8 +1202,8 @@ export default function ChurchDashboard() {
                               item.itemType === 'c3'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : item.itemType === 'service_team'
-                                ? 'bg-indigo-100 text-indigo-800'
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-sky-100 text-sky-800'
+                                : 'bg-teal-100 text-teal-800'
                             }`}
                           >
                             {item.itemType.replace(/_/g, ' ')}
@@ -1212,10 +1228,10 @@ export default function ChurchDashboard() {
                               report: item,
                             })
                           }
-                          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5"
                         >
                           <ShieldCheck className="w-4 h-4" />
-                          <span>Review & Sign Off</span>
+                          <span>Review &amp; Sign Off</span>
                         </button>
                       </div>
                     </div>
@@ -1235,8 +1251,8 @@ export default function ChurchDashboard() {
             
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Download className="w-5 h-5 text-amber-600" />
-                Reports & Export Centre
+                <Download className="w-5 h-5 text-[#0a719e]" />
+                Reports &amp; Export Centre
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Generate official pastoral bulletins, audit spreadsheets, and PDF documents
@@ -1248,7 +1264,7 @@ export default function ChurchDashboard() {
               {/* Executive Pastoral Brief Card */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0a719e] flex items-center justify-center">
                     <Award className="w-5 h-5" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">
@@ -1260,7 +1276,7 @@ export default function ChurchDashboard() {
                 </div>
                 <button
                   onClick={() => exportConsolidatedPastoralBriefPDF(metrics, c3Reports, serviceTeamReports, ministryReports)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition shadow-sm"
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download Pastoral Brief (PDF)</span>
@@ -1301,11 +1317,11 @@ export default function ChurchDashboard() {
               {/* Service Teams Export */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 flex flex-col justify-between">
                 <div className="space-y-2">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0a719e] flex items-center justify-center">
                     <Wrench className="w-5 h-5" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    Service Teams Operations & Equipment Audit
+                    Service Teams Operations &amp; Equipment Audit
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Sunday and Midweek operational records covering Choir, Ushers, Media, Sanctuary Keepers, Security rosters, equipment faults, and procurement needs.
@@ -1321,7 +1337,7 @@ export default function ChurchDashboard() {
                   </button>
                   <button
                     onClick={() => exportServiceTeamReportsToExcel(serviceTeamReports)}
-                    className="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+                    className="py-2.5 px-3 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Excel</span>
@@ -1334,9 +1350,8 @@ export default function ChurchDashboard() {
           </div>
         )}
 
-
         {/* ========================================================================= */}
-        {/* TAB: SUNDAY SERVICE RECORDS                                                */}
+        {/* TAB 7: SUNDAY SERVICE RECORDS                                             */}
         {/* ========================================================================= */}
         {activeTab === 'sunday_service' && (
           <div className="space-y-5 animate-fadeIn">
@@ -1377,8 +1392,8 @@ export default function ChurchDashboard() {
                       <th className="py-3 px-4 text-center">Total</th>
                       <th className="py-3 px-4 text-center">1st Timers</th>
                       <th className="py-3 px-4 text-center">Converts</th>
-                      <th className="py-3 px-4 text-right">Offering (?)</th>
-                      <th className="py-3 px-4 text-right">Tithe (?)</th>
+                      <th className="py-3 px-4 text-right">Offering (₦)</th>
+                      <th className="py-3 px-4 text-right">Tithe (₦)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
@@ -1396,10 +1411,10 @@ export default function ChurchDashboard() {
                           {s.maleCount} / {s.femaleCount} / {s.childrenCount}
                         </td>
                         <td className="py-3.5 px-4 text-center font-black text-[#0a719e] whitespace-nowrap text-sm">{s.totalAttendance}</td>
-                        <td className="py-3.5 px-4 text-center font-semibold text-amber-700 whitespace-nowrap">{s.firstTimersCount}</td>
-                        <td className="py-3.5 px-4 text-center font-semibold text-rose-600 whitespace-nowrap">{s.newConvertsCount}</td>
-                        <td className="py-3.5 px-4 text-right font-medium text-slate-800 whitespace-nowrap">?{s.totalOffering.toLocaleString()}</td>
-                        <td className="py-3.5 px-4 text-right font-medium text-emerald-700 whitespace-nowrap">?{s.totalTithe.toLocaleString()}</td>
+                        <td className="py-3.5 px-4 text-center font-semibold text-sky-700 whitespace-nowrap">{s.firstTimersCount}</td>
+                        <td className="py-3.5 px-4 text-center font-semibold text-emerald-700 whitespace-nowrap">{s.newConvertsCount}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-slate-800 whitespace-nowrap">₦{s.totalOffering.toLocaleString()}</td>
+                        <td className="py-3.5 px-4 text-right font-medium text-emerald-700 whitespace-nowrap">₦{s.totalTithe.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1417,20 +1432,20 @@ export default function ChurchDashboard() {
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total First Timers</p>
-                    <p className="text-base font-black text-amber-700">
+                    <p className="text-base font-black text-sky-700">
                       {generalServices.reduce((a, s) => a + s.firstTimersCount, 0)}
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total Converts</p>
-                    <p className="text-base font-black text-rose-600">
+                    <p className="text-base font-black text-emerald-700">
                       {generalServices.reduce((a, s) => a + s.newConvertsCount, 0)}
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total Giving</p>
                     <p className="text-base font-black text-emerald-700">
-                      ?{(generalServices.reduce((a, s) => a + s.totalOffering + s.totalTithe, 0) / 1000).toFixed(0)}k
+                      ₦{(generalServices.reduce((a, s) => a + s.totalOffering + s.totalTithe, 0) / 1000).toFixed(0)}k
                     </p>
                   </div>
                 </div>
@@ -1448,26 +1463,26 @@ export default function ChurchDashboard() {
             <span className="font-bold text-white text-sm tracking-wide">
               CHRIST FAMILY CENTRE MAKURDI
             </span>
-            <span className="text-yellow-300 font-semibold">â€¢</span>
+            <span className="text-emerald-300 font-semibold">•</span>
             <span className="text-sky-200">A Branch of Christ Family Ministries</span>
           </div>
           <div className="flex items-center gap-4 text-sky-200">
-            <span className="italic text-yellow-300">"Raising a Happy & Successful People"</span>
-            <span>â€¢</span>
+            <span className="italic text-white">&ldquo;Raising a Happy &amp; Successful People&rdquo;</span>
+            <span>•</span>
             <span className="font-medium text-white">Love is King</span>
-            <span>â€¢</span>
+            <span>•</span>
             <a
               href="https://christfamilyministries.org"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:text-yellow-300 underline underline-offset-2 transition"
+              className="text-white hover:text-sky-200 underline underline-offset-2 transition"
             >
               christfamilyministries.org
             </a>
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-white/10 text-center text-sky-200/80 text-[11px]">
-          Â© {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome & Avese Tokula. Reporting Portal for Makurdi Branch.
+          © {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome &amp; Avese Tokula. Reporting Portal for Makurdi Branch.
         </div>
       </footer>
 
@@ -1487,11 +1502,11 @@ export default function ChurchDashboard() {
         onClose={() => setMinistryModalOpen(false)}
       />
 
-
       <SundayServiceModal
         isOpen={sundayModalOpen}
         onClose={() => setSundayModalOpen(false)}
       />
+
       <ReviewModal
         isOpen={reviewModalData.isOpen}
         onClose={() =>

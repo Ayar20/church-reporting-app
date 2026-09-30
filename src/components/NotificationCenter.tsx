@@ -117,16 +117,16 @@ const typeIcon = {
 };
 
 const typeBg = {
-  c3: 'bg-emerald-100 text-emerald-700',
-  service_team: 'bg-indigo-100 text-indigo-700',
-  ministry: 'bg-rose-100 text-rose-700',
-  service: 'bg-sky-100 text-sky-700',
+  c3: 'bg-emerald-100 text-emerald-800',
+  service_team: 'bg-sky-100 text-sky-800',
+  ministry: 'bg-teal-100 text-teal-800',
+  service: 'bg-blue-100 text-blue-800',
 };
 
 function statusIcon(status: ReportStatus | 'info') {
-  if (status === 'approved_by_resident_pastor') return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
-  if (status === 'revision_requested') return <AlertCircle className="w-3.5 h-3.5 text-rose-500" />;
-  return <Clock className="w-3.5 h-3.5 text-amber-500" />;
+  if (status === 'approved_by_resident_pastor') return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
+  if (status === 'revision_requested') return <AlertCircle className="w-3.5 h-3.5 text-rose-600" />;
+  return <Clock className="w-3.5 h-3.5 text-sky-600" />;
 }
 
 export default function NotificationCenter() {
@@ -161,7 +161,7 @@ export default function NotificationCenter() {
       >
         <Bell className="w-4.5 h-4.5 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-yellow-400 text-[10px] font-black text-slate-900 flex items-center justify-center px-1 shadow">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-emerald-500 text-[10px] font-black text-white flex items-center justify-center px-1 shadow">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -179,10 +179,10 @@ export default function NotificationCenter() {
             {/* Panel Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-slate-600" />
+                <Bell className="w-4 h-4 text-slate-700" />
                 <span className="text-sm font-bold text-slate-900">Notifications</span>
                 {unreadCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
+                  <span className="px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-bold">
                     {unreadCount} new
                   </span>
                 )}
@@ -207,7 +207,7 @@ export default function NotificationCenter() {
             </div>
 
             {/* Notification List */}
-            <div className="max-h-96 overflow-y-auto divide-y divide-slate-50">
+            <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
               {notifications.length === 0 ? (
                 <div className="py-10 text-center">
                   <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
@@ -221,7 +221,7 @@ export default function NotificationCenter() {
                       key={n.id}
                       onClick={() => markRead(n.id)}
                       className={`flex gap-3 px-4 py-3 cursor-pointer transition ${
-                        isRead ? 'bg-white hover:bg-slate-50' : 'bg-amber-50/40 hover:bg-amber-50'
+                        isRead ? 'bg-white hover:bg-slate-50' : 'bg-sky-50/50 hover:bg-sky-50'
                       }`}
                     >
                       {/* Type icon */}
@@ -239,13 +239,13 @@ export default function NotificationCenter() {
                             {formatRelativeTime(n.timestamp)}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
                           {n.body}
                         </p>
                         <div className="flex items-center gap-1 mt-1">
                           {statusIcon(n.status)}
                           {!isRead && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-auto" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 ml-auto" />
                           )}
                         </div>
                       </div>
@@ -257,7 +257,7 @@ export default function NotificationCenter() {
 
             {/* Footer */}
             <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 text-center">
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Showing alerts relevant to your role · {currentUser.role.replace(/_/g, ' ')}
               </p>
             </div>

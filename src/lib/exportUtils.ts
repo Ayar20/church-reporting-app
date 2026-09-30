@@ -74,7 +74,7 @@ export async function exportC3ReportsToPDF(reports: C3Report[], title = 'C3 Comm
   doc.text('CHRIST FAMILY MINISTRIES', 14, 12);
 
   doc.setFontSize(10);
-  doc.setTextColor(255, 240, 0); // CFM Yellow
+  doc.setTextColor(224, 242, 254); // Crisp light ice blue
   doc.text(`Christ Family Centre Makurdi • ${title} | ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
 
   const tableBody = reports.map((r) => [
@@ -130,7 +130,7 @@ export async function exportServiceTeamReportsToPDF(reports: ServiceTeamReport[]
   doc.text('CHRIST FAMILY MINISTRIES', 14, 12);
 
   doc.setFontSize(10);
-  doc.setTextColor(255, 240, 0);
+  doc.setTextColor(224, 242, 254);
   doc.text(`Christ Family Centre Makurdi • Service Teams Operational Report | ${new Date().toLocaleDateString('en-GB')}`, 14, 20);
 
   const tableBody = reports.map((r) => [
@@ -190,7 +190,7 @@ export async function exportConsolidatedPastoralBriefPDF(
   doc.text('CHRIST FAMILY MINISTRIES', 14, 13);
 
   doc.setFontSize(11);
-  doc.setTextColor(255, 240, 0); // CFM Radiant Yellow
+  doc.setTextColor(224, 242, 254); // Crisp light ice blue
   doc.text('Christ Family Centre Makurdi • Weekly Pastoral Report', 14, 21);
 
   doc.setFontSize(8.5);
@@ -267,7 +267,7 @@ export async function exportConsolidatedPastoralBriefPDF(
       body: minRows,
       startY: nextY + 4,
       theme: 'grid',
-      headStyles: { fillColor: [237, 32, 36], fontSize: 8.5 },
+      headStyles: { fillColor: [5, 150, 105], fontSize: 8.5 },
       styles: { fontSize: 8, cellPadding: 2.5 },
     });
   }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useChurch } from '@/lib/store';
-import { X, Users, HeartHandshake, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Users, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -71,7 +71,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
                 Submit Weekly C3 Community Church Report
               </h3>
               <p className="text-xs text-slate-400">
-                Cell fellowship attendance, souls, giving & pastoral notes
+                Cell fellowship attendance, souls, giving &amp; pastoral notes
               </p>
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
             </div>
 
             {/* Financials (Offering & Tithe in Naira) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-amber-50/50 p-4 rounded-xl border border-amber-200/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-200/60">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   C3 Offering (₦ Naira)
@@ -236,7 +236,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
                   step="500"
                   value={offeringAmount}
                   onChange={(e) => setOfferingAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
@@ -249,7 +249,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
                   step="500"
                   value={tithesAmount}
                   onChange={(e) => setTithesAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -271,7 +271,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Urgent Prayer Requests & Hospital Follow-ups
+                  Urgent Prayer Requests &amp; Hospital Follow-ups
                 </label>
                 <textarea
                   rows={2}
