@@ -1,16 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChurch } from '@/lib/store';
+import { MinistryReport } from '@/lib/types';
 import { X, Heart, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  editingReport?: MinistryReport | null;
 }
 
-export default function MinistryReportModal({ isOpen, onClose }: Props) {
-  const { currentUser, ministryTeams, submitMinistryReport } = useChurch();
+export default function MinistryReportModal({ isOpen, onClose, editingReport }: Props) {
+  const { currentUser, ministryTeams, submitMinistryReport, editMinistryReport } = useChurch();
+
+  const isEditing = Boolean(editingReport);
 
   const [ministryId, setMinistryId] = useState(currentUser.ministryId || ministryTeams[0]?.id || '');
   const [meetingDate, setMeetingDate] = useState(new Date().toISOString().split('T')[0]);
@@ -24,11 +28,38 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
   const [challengesAndRequests, setChallengesAndRequests] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
 
+  useEffect(() => {
+    if (editingReport) {
+      setMinistryId(editingReport.ministryId || '');
+      setMeetingDate(editingReport.meetingDate || new Date().toISOString().split('T')[0]);
+      setReportTitle(editingReport.reportTitle || '');
+      setTotalAttendance(editingReport.totalAttendance || 0);
+      setFirstTimers(editingReport.firstTimers || 0);
+      setOfferingAmount(editingReport.offeringAmount || 0);
+      setActivitiesSummary(editingReport.activitiesSummary || '');
+      setSpiritualHighlights(editingReport.spiritualHighlights || '');
+      setUpcomingPrograms(editingReport.upcomingPrograms || '');
+      setChallengesAndRequests(editingReport.challengesAndRequests || '');
+    } else {
+      setMinistryId(currentUser.ministryId || ministryTeams[0]?.id || '');
+      setMeetingDate(new Date().toISOString().split('T')[0]);
+      setReportTitle('');
+      setTotalAttendance(0);
+      setFirstTimers(0);
+      setOfferingAmount(0);
+      setActivitiesSummary('');
+      setSpiritualHighlights('');
+      setUpcomingPrograms('');
+      setChallengesAndRequests('');
+    }
+  }, [editingReport, isOpen, currentUser, ministryTeams]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitMinistryReport({
+
+    const payload = {
       ministryId,
       meetingDate,
       reportTitle,
@@ -39,7 +70,13 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
       spiritualHighlights,
       upcomingPrograms,
       challengesAndRequests,
-    });
+    };
+
+    if (isEditing && editingReport) {
+      editMinistryReport(editingReport.id, payload);
+    } else {
+      submitMinistryReport(payload);
+    }
 
     setSuccessMsg(true);
     setTimeout(() => {
@@ -60,7 +97,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white">
-                Submit Ministry Team Report
+                {isEditing ? 'Edit Ministry Team Report' : 'Submit Ministry Team Report'}
               </h3>
               <p className="text-xs text-slate-400">
                 Men of Faith, 31st Ladies, or Children&apos;s Church meeting highlights
@@ -80,9 +117,11 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h4 className="text-lg font-bold text-slate-900">Ministry Team Report Submitted!</h4>
+            <h4 className="text-lg font-bold text-slate-900">
+              {isEditing ? 'Report Successfully Updated!' : 'Ministry Team Report Submitted!'}
+            </h4>
             <p className="text-sm text-slate-500 mt-1">
-              Your fellowship report is routed directly to the Resident Pastor.
+              {isEditing ? 'Your changes have been saved.' : 'Your fellowship report is routed directly to the Resident Pastor.'}
             </p>
           </div>
         ) : (
@@ -256,7 +295,7 @@ export default function MinistryReportModal({ isOpen, onClose }: Props) {
                 type="submit"
                 className="px-5 py-2.5 rounded-xl bg-[#0a719e] hover:bg-[#085a7e] text-white font-semibold text-sm shadow-md transition"
               >
-                Submit Ministry Team Report
+                {isEditing ? 'Save Changes' : 'Submit Ministry Team Report'}
               </button>
             </div>
           </form>

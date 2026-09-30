@@ -30,6 +30,10 @@ import {
   Flame,
   Award,
   BookOpen,
+  Pencil,
+  Trash2,
+  Building2,
+  Settings,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -61,6 +65,14 @@ import ServiceTeamReportModal from '@/components/ServiceTeamReportModal';
 import MinistryReportModal from '@/components/MinistryReportModal';
 import ReviewModal from '@/components/ReviewModal';
 import SundayServiceModal from '@/components/SundayServiceModal';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import ChurchOrganModal, { OrganType } from '@/components/ChurchOrganModal';
+import {
+  C3Centre,
+  ServiceTeam,
+  MinistryTeam,
+  GeneralServiceReport,
+} from '@/lib/types';
 import {
   exportC3ReportsToPDF,
   exportC3ReportsToExcel,
@@ -82,6 +94,13 @@ export default function ChurchDashboard() {
     serviceTeamReports,
     ministryReports,
     generalServices,
+    deleteC3Report,
+    deleteServiceTeamReport,
+    deleteMinistryReport,
+    deleteGeneralServiceReport,
+    deleteC3Centre,
+    deleteServiceTeam,
+    deleteMinistryTeam,
   } = useChurch();
 
   // Determine the default landing tab per role
@@ -109,6 +128,44 @@ export default function ChurchDashboard() {
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [ministryModalOpen, setMinistryModalOpen] = useState(false);
   const [sundayModalOpen, setSundayModalOpen] = useState(false);
+
+  // Edit states for reports
+  const [editingC3Report, setEditingC3Report] = useState<C3Report | null>(null);
+  const [editingTeamReport, setEditingTeamReport] = useState<ServiceTeamReport | null>(null);
+  const [editingMinistryReport, setEditingMinistryReport] = useState<MinistryReport | null>(null);
+  const [editingSundayReport, setEditingSundayReport] = useState<GeneralServiceReport | null>(null);
+
+  // Delete confirmation modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    itemLabel?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    itemLabel: '',
+    onConfirm: () => {},
+  });
+
+  // Church organ management modal state (C3 / Service Team / Ministry)
+  const [organModal, setOrganModal] = useState<{
+    isOpen: boolean;
+    organType: OrganType;
+    editingItem?: C3Centre | ServiceTeam | MinistryTeam | null;
+  }>({
+    isOpen: false,
+    organType: 'c3',
+    editingItem: null,
+  });
+
+  // Directory view toggles for Pastoral roles
+  const [showC3Directory, setShowC3Directory] = useState(false);
+  const [showTeamsDirectory, setShowTeamsDirectory] = useState(false);
+  const [showMinistriesDirectory, setShowMinistriesDirectory] = useState(false);
+
   const [reviewModalData, setReviewModalData] = useState<{
     isOpen: boolean;
     type: 'c3' | 'service_team' | 'ministry';
@@ -862,6 +919,31 @@ export default function ChurchDashboard() {
                   <span>Excel</span>
                 </button>
 
+                {/* Manage C3 Centres (Pastors only) */}
+                {isPastor && (
+                  <>
+                    <button
+                      onClick={() => setShowC3Directory(!showC3Directory)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                        showC3Directory
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{showC3Directory ? 'View Reports Table' : `Manage C3 Centres (${c3Centres.length})`}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setOrganModal({ isOpen: true, organType: 'c3', editingItem: null })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs shadow-sm transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add C3 Centre</span>
+                    </button>
+                  </>
+                )}
+
                 {/* Submit New Report */}
                 <button
                   onClick={() => setC3ModalOpen(true)}
@@ -872,6 +954,76 @@ export default function ChurchDashboard() {
                 </button>
               </div>
             </div>
+
+            {/* C3 Centres Directory Grid (Shown when toggled by Pastors) */}
+            {showC3Directory && isPastor && (
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-emerald-700" />
+                    <h3 className="text-sm font-bold text-slate-900">Makurdi C3 Community Churches Directory</h3>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {c3Centres.length} Active Centers Across Makurdi
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {c3Centres.map((c) => (
+                    <div key={c.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{c.name}</h4>
+                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                            {c.zone} Zone
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setOrganModal({ isOpen: true, organType: 'c3', editingItem: c })}
+                            className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            title="Edit C3 Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setDeleteModal({
+                                isOpen: true,
+                                title: 'Delete C3 Community Church',
+                                message: `Are you sure you want to delete ${c.name}? All cell reports linked to this center will remain archived.`,
+                                itemLabel: `${c.name} (${c.zone})`,
+                                onConfirm: () => deleteC3Centre(c.id),
+                              })
+                            }
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Delete C3 Centre"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-600 space-y-1">
+                        <p className="flex items-start gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                          <span>{c.meetingAddress}</span>
+                        </p>
+                        <p className="flex items-center gap-1.5 text-slate-500">
+                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{c.meetingDay} • {c.meetingTime}</span>
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Host: <strong>{c.hostName || 'TBA'}</strong></span>
+                        <span className="text-emerald-800 font-semibold">{c.ministerName || 'Assigned Minister'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* C3 Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -932,22 +1084,53 @@ export default function ChurchDashboard() {
                           {r.submittedByName}
                         </td>
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          {isPastor ? (
-                            <button
-                              onClick={() =>
-                                setReviewModalData({
-                                  isOpen: true,
-                                  type: 'c3',
-                                  report: r,
-                                })
-                              }
-                              className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs border border-sky-200 transition"
-                            >
-                              Review
-                            </button>
-                          ) : (
-                            <span className="text-[11px] text-slate-400">Recorded</span>
-                          )}
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isPastor && (
+                              <button
+                                onClick={() =>
+                                  setReviewModalData({
+                                    isOpen: true,
+                                    type: 'c3',
+                                    report: r,
+                                  })
+                                }
+                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold text-xs border border-sky-200 transition"
+                              >
+                                Review
+                              </button>
+                            )}
+
+                            {(isPastor || (currentUser.role === 'c3_minister' && r.c3Id === currentUser.c3Id)) && (
+                              <button
+                                onClick={() => {
+                                  setEditingC3Report(r);
+                                  setC3ModalOpen(true);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                                title="Edit C3 Report"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {(isPastor || (currentUser.role === 'c3_minister' && r.c3Id === currentUser.c3Id && r.status !== 'approved_by_resident_pastor')) && (
+                              <button
+                                onClick={() => {
+                                  setDeleteModal({
+                                    isOpen: true,
+                                    title: 'Delete C3 Report',
+                                    message: `Are you sure you want to delete this C3 report from ${r.c3Name} (${r.meetingDate})?`,
+                                    itemLabel: `${r.c3Name} — ${r.topicTaught}`,
+                                    onConfirm: () => deleteC3Report(r.id),
+                                  });
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Delete C3 Report"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1013,6 +1196,31 @@ export default function ChurchDashboard() {
                   <span>Excel</span>
                 </button>
 
+                {/* Manage Service Teams (Pastors only) */}
+                {isPastor && (
+                  <>
+                    <button
+                      onClick={() => setShowTeamsDirectory(!showTeamsDirectory)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                        showTeamsDirectory
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{showTeamsDirectory ? 'View Reports Grid' : `Manage Teams (${serviceTeams.length})`}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setOrganModal({ isOpen: true, organType: 'service_team', editingItem: null })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs shadow-sm transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Service Team</span>
+                    </button>
+                  </>
+                )}
+
                 {/* Submit New Report */}
                 <button
                   onClick={() => setTeamModalOpen(true)}
@@ -1023,6 +1231,70 @@ export default function ChurchDashboard() {
                 </button>
               </div>
             </div>
+
+            {/* Service Teams Directory Grid (Shown when toggled by Pastors) */}
+            {showTeamsDirectory && isPastor && (
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="w-5 h-5 text-blue-700" />
+                    <h3 className="text-sm font-bold text-slate-900">Church Operational Service Teams Directory</h3>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {serviceTeams.length} Operational Units
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {serviceTeams.map((t) => (
+                    <div key={t.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">{t.name}</h4>
+                            <span className="text-[10px] font-mono text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                              {t.code}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setOrganModal({ isOpen: true, organType: 'service_team', editingItem: t })}
+                              className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                              title="Edit Team Details"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteModal({
+                                  isOpen: true,
+                                  title: 'Delete Service Team',
+                                  message: `Are you sure you want to delete ${t.name}?`,
+                                  itemLabel: t.name,
+                                  onConfirm: () => deleteServiceTeam(t.id),
+                                })
+                              }
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Team"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-2">
+                          {t.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Team Leader:</span>
+                        <span className="font-bold text-slate-900">{t.leaderName || 'Appointed Leader'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Service Teams Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1111,20 +1383,53 @@ export default function ChurchDashboard() {
                     <span className="text-slate-500">
                       By: <strong>{st.submittedByName}</strong>
                     </span>
-                    {isPastor && (
-                      <button
-                        onClick={() =>
-                          setReviewModalData({
-                            isOpen: true,
-                            type: 'service_team',
-                            report: st,
-                          })
-                        }
-                        className="px-3 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
-                      >
-                        Review
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {isPastor && (
+                        <button
+                          onClick={() =>
+                            setReviewModalData({
+                              isOpen: true,
+                              type: 'service_team',
+                              report: st,
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
+                        >
+                          Review
+                        </button>
+                      )}
+
+                      {(isPastor || (currentUser.role === 'service_team_leader' && st.teamId === currentUser.serviceTeamId)) && (
+                        <button
+                          onClick={() => {
+                            setEditingTeamReport(st);
+                            setTeamModalOpen(true);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit Team Report"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {(isPastor || (currentUser.role === 'service_team_leader' && st.teamId === currentUser.serviceTeamId && st.status !== 'approved_by_resident_pastor')) && (
+                        <button
+                          onClick={() => {
+                            setDeleteModal({
+                              isOpen: true,
+                              title: 'Delete Service Team Report',
+                              message: `Are you sure you want to delete the report for ${st.teamName} on ${st.serviceDate}?`,
+                              itemLabel: `${st.teamName} (${st.serviceDate})`,
+                              onConfirm: () => deleteServiceTeamReport(st.id),
+                            });
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Delete Team Report"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1152,6 +1457,31 @@ export default function ChurchDashboard() {
               </div>
 
               <div className="flex items-center gap-2.5">
+                {/* Manage Ministries (Pastors only) */}
+                {isPastor && (
+                  <>
+                    <button
+                      onClick={() => setShowMinistriesDirectory(!showMinistriesDirectory)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                        showMinistriesDirectory
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{showMinistriesDirectory ? 'View Reports Grid' : `Manage Ministries (${ministryTeams.length})`}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setOrganModal({ isOpen: true, organType: 'ministry', editingItem: null })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs shadow-sm transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Fellowship Ministry</span>
+                    </button>
+                  </>
+                )}
+
                 <button
                   onClick={() => setMinistryModalOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-semibold text-xs shadow-sm transition"
@@ -1161,6 +1491,70 @@ export default function ChurchDashboard() {
                 </button>
               </div>
             </div>
+
+            {/* Fellowship Ministries Directory Grid (Shown when toggled by Pastors) */}
+            {showMinistriesDirectory && isPastor && (
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-teal-700" />
+                    <h3 className="text-sm font-bold text-slate-900">Church Fellowship Ministries Directory</h3>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {ministryTeams.length} Fellowship Arms
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {ministryTeams.map((m) => (
+                    <div key={m.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">{m.name}</h4>
+                            <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+                              {m.targetAudience}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setOrganModal({ isOpen: true, organType: 'ministry', editingItem: m })}
+                              className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition"
+                              title="Edit Ministry Details"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteModal({
+                                  isOpen: true,
+                                  title: 'Delete Fellowship Ministry',
+                                  message: `Are you sure you want to delete ${m.name}?`,
+                                  itemLabel: m.name,
+                                  onConfirm: () => deleteMinistryTeam(m.id),
+                                })
+                              }
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Ministry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-2">
+                          {m.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Ministry Leader:</span>
+                        <span className="font-bold text-slate-900">{m.leaderName || 'Appointed Leader'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Ministry Reports Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1257,20 +1651,53 @@ export default function ChurchDashboard() {
                     <span className="text-slate-500">
                       Leader: <strong>{m.submittedByName}</strong>
                     </span>
-                    {isResidentPastor && (
-                      <button
-                        onClick={() =>
-                          setReviewModalData({
-                            isOpen: true,
-                            type: 'ministry',
-                            report: m,
-                          })
-                        }
-                        className="px-3 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
-                      >
-                        Review
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {isResidentPastor && (
+                        <button
+                          onClick={() =>
+                            setReviewModalData({
+                              isOpen: true,
+                              type: 'ministry',
+                              report: m,
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 font-semibold border border-sky-200 transition"
+                        >
+                          Review
+                        </button>
+                      )}
+
+                      {(isPastor || (currentUser.role === 'ministry_leader' && m.ministryId === currentUser.ministryId)) && (
+                        <button
+                          onClick={() => {
+                            setEditingMinistryReport(m);
+                            setMinistryModalOpen(true);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition"
+                          title="Edit Ministry Report"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {(isPastor || (currentUser.role === 'ministry_leader' && m.ministryId === currentUser.ministryId && m.status !== 'approved_by_resident_pastor')) && (
+                        <button
+                          onClick={() => {
+                            setDeleteModal({
+                              isOpen: true,
+                              title: 'Delete Ministry Team Report',
+                              message: `Are you sure you want to delete the report for ${m.ministryName} on ${m.meetingDate}?`,
+                              itemLabel: `${m.ministryName} — ${m.reportTitle}`,
+                              onConfirm: () => deleteMinistryReport(m.id),
+                            });
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Delete Ministry Team Report"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1529,6 +1956,7 @@ export default function ChurchDashboard() {
                       <th className="py-3 px-4 text-center">Converts</th>
                       <th className="py-3 px-4 text-right">Offering (₦)</th>
                       <th className="py-3 px-4 text-right">Tithe (₦)</th>
+                      {isPastor && <th className="py-3 px-4 text-center">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
@@ -1548,6 +1976,37 @@ export default function ChurchDashboard() {
                         <td className="py-3.5 px-4 text-center font-semibold text-emerald-700 whitespace-nowrap">{s.newConvertsCount}</td>
                         <td className="py-3.5 px-4 text-right font-medium text-slate-800 whitespace-nowrap">₦{s.totalOffering.toLocaleString()}</td>
                         <td className="py-3.5 px-4 text-right font-medium text-emerald-700 whitespace-nowrap">₦{s.totalTithe.toLocaleString()}</td>
+                        {isPastor && (
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setEditingSundayReport(s);
+                                  setSundayModalOpen(true);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-[#0a719e] hover:bg-sky-50 rounded-lg transition"
+                                title="Edit Service Record"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeleteModal({
+                                    isOpen: true,
+                                    title: 'Delete Service Record',
+                                    message: `Are you sure you want to delete the record for "${s.sermonTitle || 'Sunday Service'}" on ${s.serviceDate}?`,
+                                    itemLabel: `${s.sermonTitle} (${s.serviceDate})`,
+                                    onConfirm: () => deleteGeneralServiceReport(s.id),
+                                  });
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Delete Service Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -1622,22 +2081,54 @@ export default function ChurchDashboard() {
       {/* Interactive Modals */}
       <C3ReportModal
         isOpen={c3ModalOpen}
-        onClose={() => setC3ModalOpen(false)}
+        onClose={() => {
+          setC3ModalOpen(false);
+          setEditingC3Report(null);
+        }}
+        editingReport={editingC3Report}
       />
 
       <ServiceTeamReportModal
         isOpen={teamModalOpen}
-        onClose={() => setTeamModalOpen(false)}
+        onClose={() => {
+          setTeamModalOpen(false);
+          setEditingTeamReport(null);
+        }}
+        editingReport={editingTeamReport}
       />
 
       <MinistryReportModal
         isOpen={ministryModalOpen}
-        onClose={() => setMinistryModalOpen(false)}
+        onClose={() => {
+          setMinistryModalOpen(false);
+          setEditingMinistryReport(null);
+        }}
+        editingReport={editingMinistryReport}
       />
 
       <SundayServiceModal
         isOpen={sundayModalOpen}
-        onClose={() => setSundayModalOpen(false)}
+        onClose={() => {
+          setSundayModalOpen(false);
+          setEditingSundayReport(null);
+        }}
+        editingReport={editingSundayReport}
+      />
+
+      <ChurchOrganModal
+        isOpen={organModal.isOpen}
+        organType={organModal.organType}
+        editingItem={organModal.editingItem}
+        onClose={() => setOrganModal({ isOpen: false, organType: 'c3', editingItem: null })}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={deleteModal.title}
+        message={deleteModal.message}
+        itemLabel={deleteModal.itemLabel}
+        onConfirm={deleteModal.onConfirm}
+        onClose={() => setDeleteModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
       />
 
       <ReviewModal

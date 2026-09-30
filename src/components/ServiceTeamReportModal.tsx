@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChurch } from '@/lib/store';
-import { ServiceType } from '@/lib/types';
+import { ServiceType, ServiceTeamReport } from '@/lib/types';
 import { X, Wrench, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  editingReport?: ServiceTeamReport | null;
 }
 
-export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
-  const { currentUser, serviceTeams, submitServiceTeamReport } = useChurch();
+export default function ServiceTeamReportModal({ isOpen, onClose, editingReport }: Props) {
+  const { currentUser, serviceTeams, submitServiceTeamReport, editServiceTeamReport } = useChurch();
+
+  const isEditing = Boolean(editingReport);
 
   const [teamId, setTeamId] = useState(currentUser.serviceTeamId || serviceTeams[0]?.id || '');
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
@@ -24,11 +27,36 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
   const [urgentNeeds, setUrgentNeeds] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
 
+  useEffect(() => {
+    if (editingReport) {
+      setTeamId(editingReport.teamId || '');
+      setServiceDate(editingReport.serviceDate || new Date().toISOString().split('T')[0]);
+      setServiceType(editingReport.serviceType || 'first_service');
+      setRosterPresentCount(editingReport.rosterPresentCount || 0);
+      setRosterAbsentCount(editingReport.rosterAbsentCount || 0);
+      setTasksCompleted(editingReport.tasksCompleted || '');
+      setEquipmentStatus(editingReport.equipmentStatus || '');
+      setChallengesEncountered(editingReport.challengesEncountered || '');
+      setUrgentNeeds(editingReport.urgentNeeds || '');
+    } else {
+      setTeamId(currentUser.serviceTeamId || serviceTeams[0]?.id || '');
+      setServiceDate(new Date().toISOString().split('T')[0]);
+      setServiceType('first_service');
+      setRosterPresentCount(15);
+      setRosterAbsentCount(2);
+      setTasksCompleted('');
+      setEquipmentStatus('');
+      setChallengesEncountered('');
+      setUrgentNeeds('');
+    }
+  }, [editingReport, isOpen, currentUser, serviceTeams]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitServiceTeamReport({
+
+    const payload = {
       teamId,
       serviceDate,
       serviceType,
@@ -38,7 +66,13 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
       equipmentStatus,
       challengesEncountered,
       urgentNeeds,
-    });
+    };
+
+    if (isEditing && editingReport) {
+      editServiceTeamReport(editingReport.id, payload);
+    } else {
+      submitServiceTeamReport(payload);
+    }
 
     setSuccessMsg(true);
     setTimeout(() => {
@@ -59,10 +93,10 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white">
-                Submit Service Team Operational Report
+                {isEditing ? 'Edit Service Team Operational Report' : 'Submit Service Team Operational Report'}
               </h3>
               <p className="text-xs text-slate-400">
-                Duty roster attendance, equipment condition & service tasks
+                Duty roster attendance, equipment condition &amp; service tasks
               </p>
             </div>
           </div>
@@ -79,9 +113,11 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h4 className="text-lg font-bold text-slate-900">Service Team Report Submitted!</h4>
+            <h4 className="text-lg font-bold text-slate-900">
+              {isEditing ? 'Report Successfully Updated!' : 'Service Team Report Submitted!'}
+            </h4>
             <p className="text-sm text-slate-500 mt-1">
-              Your unit report is routed to Associate Pastor (Service Teams) and Resident Pastor.
+              {isEditing ? 'Your changes have been saved.' : 'Your unit report is routed to Associate Pastor (Service Teams) and Resident Pastor.'}
             </p>
           </div>
         ) : (
@@ -254,7 +290,7 @@ export default function ServiceTeamReportModal({ isOpen, onClose }: Props) {
                 type="submit"
                 className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-md transition"
               >
-                Submit Team Report
+                {isEditing ? 'Save Changes' : 'Submit Team Report'}
               </button>
             </div>
           </form>

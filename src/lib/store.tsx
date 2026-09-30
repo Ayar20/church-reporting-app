@@ -40,10 +40,29 @@ interface ChurchContextType {
   switchUser: (userId: string) => void;
   switchRole: (role: UserRole) => void;
   logout: () => void;
+  // Reports Add / Edit / Delete
   submitC3Report: (data: Partial<C3Report>) => C3Report;
+  editC3Report: (id: string, data: Partial<C3Report>) => void;
+  deleteC3Report: (id: string) => void;
   submitServiceTeamReport: (data: Partial<ServiceTeamReport>) => ServiceTeamReport;
+  editServiceTeamReport: (id: string, data: Partial<ServiceTeamReport>) => void;
+  deleteServiceTeamReport: (id: string) => void;
   submitMinistryReport: (data: Partial<MinistryReport>) => MinistryReport;
+  editMinistryReport: (id: string, data: Partial<MinistryReport>) => void;
+  deleteMinistryReport: (id: string) => void;
   submitGeneralServiceReport: (data: Partial<GeneralServiceReport>) => GeneralServiceReport;
+  editGeneralServiceReport: (id: string, data: Partial<GeneralServiceReport>) => void;
+  deleteGeneralServiceReport: (id: string) => void;
+  // Church Structure (C3s, Service Teams, Ministries) Add / Edit / Delete
+  addC3Centre: (data: Omit<C3Centre, 'id'>) => C3Centre;
+  editC3Centre: (id: string, data: Partial<C3Centre>) => void;
+  deleteC3Centre: (id: string) => void;
+  addServiceTeam: (data: Omit<ServiceTeam, 'id'>) => ServiceTeam;
+  editServiceTeam: (id: string, data: Partial<ServiceTeam>) => void;
+  deleteServiceTeam: (id: string) => void;
+  addMinistryTeam: (data: Omit<MinistryTeam, 'id'>) => MinistryTeam;
+  editMinistryTeam: (id: string, data: Partial<MinistryTeam>) => void;
+  deleteMinistryTeam: (id: string) => void;
   updateReportReview: (
     type: 'c3' | 'service_team' | 'ministry',
     reportId: string,
@@ -59,9 +78,9 @@ const LOCAL_STORAGE_KEY = 'cfc_makurdi_reporting_state_v2';
 
 export function ChurchProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // default to Resident Pastor
-  const [c3Centres] = useState<C3Centre[]>(MOCK_C3_CENTRES);
-  const [serviceTeams] = useState<ServiceTeam[]>(MOCK_SERVICE_TEAMS);
-  const [ministryTeams] = useState<MinistryTeam[]>(MOCK_MINISTRY_TEAMS);
+  const [c3Centres, setC3Centres] = useState<C3Centre[]>(MOCK_C3_CENTRES);
+  const [serviceTeams, setServiceTeams] = useState<ServiceTeam[]>(MOCK_SERVICE_TEAMS);
+  const [ministryTeams, setMinistryTeams] = useState<MinistryTeam[]>(MOCK_MINISTRY_TEAMS);
 
   const [c3Reports, setC3Reports] = useState<C3Report[]>(MOCK_C3_REPORTS);
   const [serviceTeamReports, setServiceTeamReports] = useState<ServiceTeamReport[]>(MOCK_SERVICE_TEAM_REPORTS);
@@ -352,6 +371,198 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     return newReport;
   };
 
+  // EDIT & DELETE FOR C3 REPORTS
+  const editC3Report = (id: string, data: Partial<C3Report>) => {
+    const updated = c3Reports.map((r) => {
+      if (r.id === id) {
+        const male = data.maleAttendance !== undefined ? Number(data.maleAttendance) : r.maleAttendance;
+        const female = data.femaleAttendance !== undefined ? Number(data.femaleAttendance) : r.femaleAttendance;
+        const children = data.childrenAttendance !== undefined ? Number(data.childrenAttendance) : r.childrenAttendance;
+        const total = male + female + children;
+        const matchedC3 = data.c3Id ? c3Centres.find((c) => c.id === data.c3Id) : undefined;
+
+        return {
+          ...r,
+          ...data,
+          maleAttendance: male,
+          femaleAttendance: female,
+          childrenAttendance: children,
+          totalAttendance: total,
+          c3Name: matchedC3 ? matchedC3.name : (data.c3Name || r.c3Name),
+          zone: matchedC3 ? matchedC3.zone : (data.zone || r.zone),
+          firstTimers: data.firstTimers !== undefined ? Number(data.firstTimers) : r.firstTimers,
+          newConverts: data.newConverts !== undefined ? Number(data.newConverts) : r.newConverts,
+          offeringAmount: data.offeringAmount !== undefined ? Number(data.offeringAmount) : r.offeringAmount,
+          tithesAmount: data.tithesAmount !== undefined ? Number(data.tithesAmount) : r.tithesAmount,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return r;
+    });
+    setC3Reports(updated);
+    saveState(updated, serviceTeamReports, ministryReports, currentUser);
+  };
+
+  const deleteC3Report = (id: string) => {
+    const updated = c3Reports.filter((r) => r.id !== id);
+    setC3Reports(updated);
+    saveState(updated, serviceTeamReports, ministryReports, currentUser);
+  };
+
+  // EDIT & DELETE FOR SERVICE TEAM REPORTS
+  const editServiceTeamReport = (id: string, data: Partial<ServiceTeamReport>) => {
+    const updated = serviceTeamReports.map((r) => {
+      if (r.id === id) {
+        const present = data.rosterPresentCount !== undefined ? Number(data.rosterPresentCount) : r.rosterPresentCount;
+        const absent = data.rosterAbsentCount !== undefined ? Number(data.rosterAbsentCount) : r.rosterAbsentCount;
+        const matchedTeam = data.teamId ? serviceTeams.find((t) => t.id === data.teamId) : undefined;
+
+        return {
+          ...r,
+          ...data,
+          teamName: matchedTeam ? matchedTeam.name : (data.teamName || r.teamName),
+          rosterPresentCount: present,
+          rosterAbsentCount: absent,
+          totalOnDuty: present,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return r;
+    });
+    setServiceTeamReports(updated);
+    saveState(c3Reports, updated, ministryReports, currentUser);
+  };
+
+  const deleteServiceTeamReport = (id: string) => {
+    const updated = serviceTeamReports.filter((r) => r.id !== id);
+    setServiceTeamReports(updated);
+    saveState(c3Reports, updated, ministryReports, currentUser);
+  };
+
+  // EDIT & DELETE FOR MINISTRY REPORTS
+  const editMinistryReport = (id: string, data: Partial<MinistryReport>) => {
+    const updated = ministryReports.map((r) => {
+      if (r.id === id) {
+        const matchedMin = data.ministryId ? ministryTeams.find((m) => m.id === data.ministryId) : undefined;
+        return {
+          ...r,
+          ...data,
+          ministryName: matchedMin ? matchedMin.name : (data.ministryName || r.ministryName),
+          totalAttendance: data.totalAttendance !== undefined ? Number(data.totalAttendance) : r.totalAttendance,
+          firstTimers: data.firstTimers !== undefined ? Number(data.firstTimers) : r.firstTimers,
+          offeringAmount: data.offeringAmount !== undefined ? Number(data.offeringAmount) : r.offeringAmount,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return r;
+    });
+    setMinistryReports(updated);
+    saveState(c3Reports, serviceTeamReports, updated, currentUser);
+  };
+
+  const deleteMinistryReport = (id: string) => {
+    const updated = ministryReports.filter((r) => r.id !== id);
+    setMinistryReports(updated);
+    saveState(c3Reports, serviceTeamReports, updated, currentUser);
+  };
+
+  // EDIT & DELETE FOR GENERAL SERVICES
+  const editGeneralServiceReport = (id: string, data: Partial<GeneralServiceReport>) => {
+    const updated = generalServices.map((r) => {
+      if (r.id === id) {
+        const male = data.maleCount !== undefined ? Number(data.maleCount) : r.maleCount;
+        const female = data.femaleCount !== undefined ? Number(data.femaleCount) : r.femaleCount;
+        const children = data.childrenCount !== undefined ? Number(data.childrenCount) : r.childrenCount;
+        const total = male + female + children;
+        return {
+          ...r,
+          ...data,
+          maleCount: male,
+          femaleCount: female,
+          childrenCount: children,
+          totalAttendance: total > 0 ? total : (data.totalAttendance !== undefined ? Number(data.totalAttendance) : r.totalAttendance),
+          firstTimersCount: data.firstTimersCount !== undefined ? Number(data.firstTimersCount) : r.firstTimersCount,
+          newConvertsCount: data.newConvertsCount !== undefined ? Number(data.newConvertsCount) : r.newConvertsCount,
+          totalOffering: data.totalOffering !== undefined ? Number(data.totalOffering) : r.totalOffering,
+          totalTithe: data.totalTithe !== undefined ? Number(data.totalTithe) : r.totalTithe,
+        };
+      }
+      return r;
+    });
+    setGeneralServices(updated);
+  };
+
+  const deleteGeneralServiceReport = (id: string) => {
+    const updated = generalServices.filter((r) => r.id !== id);
+    setGeneralServices(updated);
+  };
+
+  // CHURCH ORGANS CRUD: C3 CENTRES
+  const addC3Centre = (data: Omit<C3Centre, 'id'>): C3Centre => {
+    const newCentre: C3Centre = {
+      ...data,
+      id: `c3-${Date.now()}`,
+      isActive: true,
+    };
+    const updated = [...c3Centres, newCentre];
+    setC3Centres(updated);
+    return newCentre;
+  };
+
+  const editC3Centre = (id: string, data: Partial<C3Centre>) => {
+    const updated = c3Centres.map((c) => (c.id === id ? { ...c, ...data } : c));
+    setC3Centres(updated);
+  };
+
+  const deleteC3Centre = (id: string) => {
+    const updated = c3Centres.filter((c) => c.id !== id);
+    setC3Centres(updated);
+  };
+
+  // CHURCH ORGANS CRUD: SERVICE TEAMS
+  const addServiceTeam = (data: Omit<ServiceTeam, 'id'>): ServiceTeam => {
+    const newTeam: ServiceTeam = {
+      ...data,
+      id: `team-${Date.now()}`,
+      isActive: true,
+    };
+    const updated = [...serviceTeams, newTeam];
+    setServiceTeams(updated);
+    return newTeam;
+  };
+
+  const editServiceTeam = (id: string, data: Partial<ServiceTeam>) => {
+    const updated = serviceTeams.map((t) => (t.id === id ? { ...t, ...data } : t));
+    setServiceTeams(updated);
+  };
+
+  const deleteServiceTeam = (id: string) => {
+    const updated = serviceTeams.filter((t) => t.id !== id);
+    setServiceTeams(updated);
+  };
+
+  // CHURCH ORGANS CRUD: MINISTRY TEAMS
+  const addMinistryTeam = (data: Omit<MinistryTeam, 'id'>): MinistryTeam => {
+    const newMinistry: MinistryTeam = {
+      ...data,
+      id: `min-${Date.now()}`,
+      isActive: true,
+    };
+    const updated = [...ministryTeams, newMinistry];
+    setMinistryTeams(updated);
+    return newMinistry;
+  };
+
+  const editMinistryTeam = (id: string, data: Partial<MinistryTeam>) => {
+    const updated = ministryTeams.map((m) => (m.id === id ? { ...m, ...data } : m));
+    setMinistryTeams(updated);
+  };
+
+  const deleteMinistryTeam = (id: string) => {
+    const updated = ministryTeams.filter((m) => m.id !== id);
+    setMinistryTeams(updated);
+  };
+
   return (
     <ChurchContext.Provider
       value={{
@@ -370,9 +581,26 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         switchRole,
         logout,
         submitC3Report,
+        editC3Report,
+        deleteC3Report,
         submitServiceTeamReport,
+        editServiceTeamReport,
+        deleteServiceTeamReport,
         submitMinistryReport,
+        editMinistryReport,
+        deleteMinistryReport,
         submitGeneralServiceReport,
+        editGeneralServiceReport,
+        deleteGeneralServiceReport,
+        addC3Centre,
+        editC3Centre,
+        deleteC3Centre,
+        addServiceTeam,
+        editServiceTeam,
+        deleteServiceTeam,
+        addMinistryTeam,
+        editMinistryTeam,
+        deleteMinistryTeam,
         updateReportReview,
         resetToSampleData,
       }}

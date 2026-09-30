@@ -8,6 +8,7 @@ import { GeneralServiceReport, ServiceType } from '@/lib/types';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  editingReport?: GeneralServiceReport | null;
 }
 
 const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
@@ -23,9 +24,10 @@ const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   special_meeting: 'Special Meeting / Programme',
 };
 
-export default function SundayServiceModal({ isOpen, onClose }: Props) {
-  const { currentUser, submitGeneralServiceReport } = useChurch();
+export default function SundayServiceModal({ isOpen, onClose, editingReport }: Props) {
+  const { currentUser, submitGeneralServiceReport, editGeneralServiceReport } = useChurch();
 
+  const isEditing = Boolean(editingReport);
   const today = new Date().toISOString().split('T')[0];
 
   const [form, setForm] = useState({
@@ -42,6 +44,40 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
     totalTithe: '',
     notes: '',
   });
+
+  React.useEffect(() => {
+    if (editingReport) {
+      setForm({
+        serviceDate: editingReport.serviceDate || today,
+        serviceType: editingReport.serviceType || 'connect_to_life_first',
+        preacher: editingReport.preacher || '',
+        sermonTitle: editingReport.sermonTitle || '',
+        maleCount: String(editingReport.maleCount || ''),
+        femaleCount: String(editingReport.femaleCount || ''),
+        childrenCount: String(editingReport.childrenCount || ''),
+        firstTimersCount: String(editingReport.firstTimersCount || ''),
+        newConvertsCount: String(editingReport.newConvertsCount || ''),
+        totalOffering: String(editingReport.totalOffering || ''),
+        totalTithe: String(editingReport.totalTithe || ''),
+        notes: editingReport.notes || '',
+      });
+    } else {
+      setForm({
+        serviceDate: today,
+        serviceType: 'connect_to_life_first' as ServiceType,
+        preacher: '',
+        sermonTitle: '',
+        maleCount: '',
+        femaleCount: '',
+        childrenCount: '',
+        firstTimersCount: '',
+        newConvertsCount: '',
+        totalOffering: '',
+        totalTithe: '',
+        notes: '',
+      });
+    }
+  }, [editingReport, isOpen, today]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -79,7 +115,12 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
       submittedByName: currentUser.fullName,
     };
 
-    submitGeneralServiceReport(report);
+    if (isEditing && editingReport) {
+      editGeneralServiceReport(editingReport.id, report);
+    } else {
+      submitGeneralServiceReport(report);
+    }
+
     setIsSubmitting(false);
     setSubmitted(true);
   };
@@ -88,7 +129,7 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
     setSubmitted(false);
     setForm({
       serviceDate: today,
-      serviceType: 'first_service',
+      serviceType: 'connect_to_life_first',
       preacher: '',
       sermonTitle: '',
       maleCount: '',
@@ -115,7 +156,9 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
               <Church className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Connect to Life &amp; Communion Service Report</h2>
+              <h2 className="text-sm font-bold text-white">
+                {isEditing ? 'Edit Connect to Life Service Record' : 'Connect to Life & Communion Service Report'}
+              </h2>
               <p className="text-xs text-sky-100">Christ Family Centre Makurdi — Connect to Life &amp; Monthly Prayer &amp; Communion</p>
             </div>
           </div>
@@ -133,9 +176,11 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
               <Star className="w-8 h-8 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Service Report Submitted!</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {isEditing ? 'Service Record Updated!' : 'Service Report Submitted!'}
+              </h3>
               <p className="text-sm text-slate-500 mt-1">
-                The Sunday service record has been saved and is now visible on the Executive Overview dashboard.
+                {isEditing ? 'Your changes have been saved to the service records.' : 'The Sunday service record has been saved and is now visible on the Executive Overview dashboard.'}
               </p>
             </div>
             <button
@@ -372,7 +417,7 @@ export default function SundayServiceModal({ isOpen, onClose }: Props) {
                 ) : (
                   <>
                     <Church className="w-4 h-4" />
-                    Submit Service Report
+                    {isEditing ? 'Save Changes' : 'Submit Service Report'}
                   </>
                 )}
               </button>

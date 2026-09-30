@@ -1,16 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChurch } from '@/lib/store';
+import { C3Report } from '@/lib/types';
 import { X, Users, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  editingReport?: C3Report | null;
 }
 
-export default function C3ReportModal({ isOpen, onClose }: Props) {
-  const { currentUser, c3Centres, submitC3Report } = useChurch();
+export default function C3ReportModal({ isOpen, onClose, editingReport }: Props) {
+  const { currentUser, c3Centres, submitC3Report, editC3Report } = useChurch();
+
+  const isEditing = Boolean(editingReport);
 
   const [c3Id, setC3Id] = useState(currentUser.c3Id || c3Centres[0]?.id || '');
   const [meetingDate, setMeetingDate] = useState(new Date().toISOString().split('T')[0]);
@@ -27,13 +31,46 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
   const [challengesEncountered, setChallengesEncountered] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
 
+  useEffect(() => {
+    if (editingReport) {
+      setC3Id(editingReport.c3Id || '');
+      setMeetingDate(editingReport.meetingDate || new Date().toISOString().split('T')[0]);
+      setTopicTaught(editingReport.topicTaught || '');
+      setMaleAttendance(editingReport.maleAttendance || 0);
+      setFemaleAttendance(editingReport.femaleAttendance || 0);
+      setChildrenAttendance(editingReport.childrenAttendance || 0);
+      setFirstTimers(editingReport.firstTimers || 0);
+      setNewConverts(editingReport.newConverts || 0);
+      setOfferingAmount(editingReport.offeringAmount || 0);
+      setTithesAmount(editingReport.tithesAmount || 0);
+      setPrayerRequests(editingReport.prayerRequests || '');
+      setTestimonies(editingReport.testimonies || '');
+      setChallengesEncountered(editingReport.challengesEncountered || '');
+    } else {
+      setC3Id(currentUser.c3Id || c3Centres[0]?.id || '');
+      setMeetingDate(new Date().toISOString().split('T')[0]);
+      setTopicTaught('');
+      setMaleAttendance(0);
+      setFemaleAttendance(0);
+      setChildrenAttendance(0);
+      setFirstTimers(0);
+      setNewConverts(0);
+      setOfferingAmount(0);
+      setTithesAmount(0);
+      setPrayerRequests('');
+      setTestimonies('');
+      setChallengesEncountered('');
+    }
+  }, [editingReport, isOpen, currentUser, c3Centres]);
+
   if (!isOpen) return null;
 
   const totalAttendance = Number(maleAttendance) + Number(femaleAttendance) + Number(childrenAttendance);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitC3Report({
+
+    const payload = {
       c3Id,
       meetingDate,
       topicTaught,
@@ -47,7 +84,13 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
       prayerRequests,
       testimonies,
       challengesEncountered,
-    });
+    };
+
+    if (isEditing && editingReport) {
+      editC3Report(editingReport.id, payload);
+    } else {
+      submitC3Report(payload);
+    }
 
     setSuccessMsg(true);
     setTimeout(() => {
@@ -68,7 +111,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white">
-                Submit Weekly C3 Community Church Report
+                {isEditing ? 'Edit Weekly C3 Community Church Report' : 'Submit Weekly C3 Community Church Report'}
               </h3>
               <p className="text-xs text-slate-400">
                 Cell fellowship attendance, souls, giving &amp; pastoral notes
@@ -88,9 +131,11 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h4 className="text-lg font-bold text-slate-900">Report Successfully Submitted!</h4>
+            <h4 className="text-lg font-bold text-slate-900">
+              {isEditing ? 'Report Successfully Updated!' : 'Report Successfully Submitted!'}
+            </h4>
             <p className="text-sm text-slate-500 mt-1">
-              Your C3 report has been queued for Pastoral review.
+              {isEditing ? 'Your changes have been saved to the reporting records.' : 'Your C3 report has been queued for Pastoral review.'}
             </p>
           </div>
         ) : (
@@ -317,7 +362,7 @@ export default function C3ReportModal({ isOpen, onClose }: Props) {
                 type="submit"
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-md transition"
               >
-                Submit C3 Report
+                {isEditing ? 'Save Changes' : 'Submit C3 Report'}
               </button>
             </div>
           </form>
