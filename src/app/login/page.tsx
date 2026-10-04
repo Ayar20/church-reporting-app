@@ -10,8 +10,16 @@ import { UserProfile } from '@/lib/types';
 
 // Standard assigned credentials
 const DEFAULT_PASSWORDS: Record<string, string> = {
-  // Resident Pastor
+  // Resident Pastor & Admin aliases
   'resident.pastor@cfcmakurdi.org': 'resident2024',
+  'pastor.tokula@cfcmakurdi.org': 'resident2024',
+  'arome.tokula@cfcmakurdi.org': 'resident2024',
+  'pastor.arome@cfcmakurdi.org': 'resident2024',
+  'admin@cfcmakurdi.org': 'resident2024',
+  'pastor@cfcmakurdi.org': 'resident2024',
+  'admin': 'resident2024',
+  'pastor': 'resident2024',
+  'resident': 'resident2024',
   // Associate Pastors
   'assoc.c3@cfcmakurdi.org': 'associate2024',
   'assoc.teams@cfcmakurdi.org': 'associate2024',
@@ -53,6 +61,20 @@ export default function LoginPage() {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Auto-resolve known aliases for Resident Pastor / Admin
+    const ALIASES: Record<string, string> = {
+      'admin': 'resident.pastor@cfcmakurdi.org',
+      'pastor': 'resident.pastor@cfcmakurdi.org',
+      'resident': 'resident.pastor@cfcmakurdi.org',
+      'pastor.tokula': 'resident.pastor@cfcmakurdi.org',
+      'pastor.tokula@cfcmakurdi.org': 'resident.pastor@cfcmakurdi.org',
+      'arome.tokula@cfcmakurdi.org': 'resident.pastor@cfcmakurdi.org',
+      'pastor.arome@cfcmakurdi.org': 'resident.pastor@cfcmakurdi.org',
+      'admin@cfcmakurdi.org': 'resident.pastor@cfcmakurdi.org',
+      'pastor@cfcmakurdi.org': 'resident.pastor@cfcmakurdi.org',
+    };
+    const targetEmail = ALIASES[normalizedEmail] || normalizedEmail;
+
     try {
       // 1. Server-side lookup via Neon DB /api/auth
       let user: UserProfile | null = null;
@@ -60,7 +82,7 @@ export default function LoginPage() {
         const res = await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: normalizedEmail }),
+          body: JSON.stringify({ email: targetEmail }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -70,29 +92,36 @@ export default function LoginPage() {
         // Fallback to local userList if network / offline
       }
 
-      // 2. Fallback to userList if DB fetch failed
+      // 2. Fallback to userList if DB fetch failed or network unavailable
       if (!user) {
-        user = userList.find((u) => u.email.toLowerCase() === normalizedEmail) || null;
+        user = userList.find((u) => u.email.toLowerCase() === targetEmail) || null;
+      }
+
+      // 3. Fallback: match by Resident Pastor alias if applicable
+      if (!user && (targetEmail === 'resident.pastor@cfcmakurdi.org' || normalizedEmail.includes('tokula') || normalizedEmail.includes('admin') || normalizedEmail.includes('resident'))) {
+        user = userList.find((u) => u.role === 'resident_pastor') || DEMO_USERS[0];
       }
 
       if (!user) {
-        setError('Leadership account not found. Please verify your official email or contact Church Administration.');
+        setError(
+          `The email "${email}" was not found in the leadership directory. To sign in as Church Administrator, please use: resident.pastor@cfcmakurdi.org (Password: resident2024). Once signed in, you can add your personal email under Settings.`
+        );
         setIsLoading(false);
         return;
       }
 
-      // 3. Password Verification
-      const expectedPass = DEFAULT_PASSWORDS[normalizedEmail] || 'cfc2024';
+      // 4. Password Verification
+      const expectedPass = DEFAULT_PASSWORDS[targetEmail] || DEFAULT_PASSWORDS[normalizedEmail] || 'cfc2024';
       const isMasterPass = password === 'cfc2024' || password === 'password123';
       const isRolePass = password === 'resident2024' || password === 'associate2024' || password === 'minister2024' || password === 'leader2024';
       
       if (password !== expectedPass && !isMasterPass && !isRolePass) {
-        setError('Incorrect password. Please enter your assigned leadership password.');
+        setError('Incorrect password. For Administrator access, use password: resident2024 (or master password: cfc2024).');
         setIsLoading(false);
         return;
       }
 
-      // 4. Authenticate & redirect — store the full DB user directly in session
+      // 5. Authenticate & redirect — store the full user directly in session
       loginWithUser(user);
       router.push('/');
     } catch (err: unknown) {
@@ -225,6 +254,34 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              {/* Church Administrator / First-time Sign In Helper */}
+              <div className="bg-sky-50/80 rounded-2xl p-4 border border-sky-200/70 space-y-2 text-left">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-sky-950">
+                    <Shield className="w-3.5 h-3.5 text-[#0a719e]" />
+                    <span>Church Administrator Login</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('resident.pastor@cfcmakurdi.org');
+                      setPassword('resident2024');
+                      setError('');
+                    }}
+                    className="text-xs font-bold text-[#0a719e] hover:text-[#085a7e] bg-white px-2.5 py-1 rounded-lg border border-sky-300 shadow-2xs hover:bg-sky-50 transition cursor-pointer"
+                  >
+                    1-Click Fill Admin
+                  </button>
+                </div>
+                <div className="text-xs text-sky-900 space-y-1">
+                  <p><strong className="font-semibold text-slate-700">Email:</strong> <code className="bg-white px-1.5 py-0.5 rounded border border-sky-200 text-sky-950 font-mono text-[11px]">resident.pastor@cfcmakurdi.org</code></p>
+                  <p><strong className="font-semibold text-slate-700">Password:</strong> <code className="bg-white px-1.5 py-0.5 rounded border border-sky-200 text-sky-950 font-mono text-[11px]">resident2024</code></p>
+                </div>
+                <p className="text-[11px] text-sky-800 leading-relaxed pt-1.5 border-t border-sky-200/50">
+                  After logging in as Administrator, click your <strong>User Profile &rarr; Settings</strong> at top right to add your personal email, edit passwords, or add church leaders.
+                </p>
+              </div>
 
               <div className="pt-2 border-t border-slate-100 text-center">
                 <p className="text-[11px] text-slate-500">

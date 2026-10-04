@@ -19,6 +19,14 @@ export const DEMO_USERS: UserProfile[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   },
   {
+    id: 'user-pastor-tokula',
+    fullName: 'Pastor Arome Tokula',
+    email: 'pastor.tokula@cfcmakurdi.org',
+    phone: '+234 803 000 0001',
+    role: 'resident_pastor',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  },
+  {
     id: 'user-assoc-c3',
     fullName: 'Pastor Emmanuel Ogwuche',
     email: 'assoc.c3@cfcmakurdi.org',
