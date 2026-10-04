@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   UserProfile,
   UserRole,
@@ -13,6 +13,7 @@ import {
   ServiceTeam,
   MinistryTeam,
   DashboardMetricSummary,
+  AuditLog,
 } from './types';
 import {
   DEMO_USERS,
@@ -29,6 +30,18 @@ import {
 // Determine whether we have a real DB backend available
 // ---------------------------------------------------------------------------
 const DB_ENABLED = Boolean(process.env.NEXT_PUBLIC_DB_ENABLED === 'true');
+const SESSION_KEY = 'cfc_session_user';
+const CACHE_KEY = 'cfc_cache_data';
+const OUTBOX_KEY = 'cfc_offline_outbox';
+
+export interface OutboxItem {
+  id: string;
+  url: string;
+  method: 'POST' | 'PUT' | 'DELETE';
+  body?: any;
+  label: string;
+  timestamp: string;
+}
 
 // ---------------------------------------------------------------------------
 // Helper: fetch wrapper with JSON return
@@ -46,7 +59,58 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
-// Context type (unchanged so no components need editing)
+// Audit log helper (fire-and-forget — never breaks main operations)
+// ---------------------------------------------------------------------------
+async function logAudit(entry: {
+  userId: string;
+  userName: string;
+  userRole: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  entityLabel?: string;
+  details?: Record<string, unknown>;
+}) {
+  if (!DB_ENABLED) return;
+  try {
+    await apiFetch('/api/audit-logs', { method: 'POST', body: JSON.stringify(entry) });
+  } catch { /* Non-critical */ }
+}
+
+// ---------------------------------------------------------------------------
+// Offline Outbox Helpers
+// ---------------------------------------------------------------------------
+function getStoredOutbox(): OutboxItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(OUTBOX_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredOutbox(items: OutboxItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
+  } catch { /* ignore */ }
+}
+
+function queueOfflineMutation(item: Omit<OutboxItem, 'id' | 'timestamp'>) {
+  const items = getStoredOutbox();
+  const newItem: OutboxItem = {
+    ...item,
+    id: `outbox-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: new Date().toISOString(),
+  };
+  items.push(newItem);
+  saveStoredOutbox(items);
+  return items.length;
+}
+
+// ---------------------------------------------------------------------------
+// Context type
 // ---------------------------------------------------------------------------
 interface ChurchContextType {
   currentUser: UserProfile;
@@ -62,6 +126,10 @@ interface ChurchContextType {
   isLoggedIn: boolean;
   isAuthChecked: boolean;
   isLoading: boolean;
+  isOnline: boolean;
+  pendingSyncCount: number;
+  isSyncing: boolean;
+  syncOfflineOutbox: () => Promise<void>;
   switchUser: (userId: string) => void;
   switchRole: (role: UserRole) => void;
   logout: () => void;
@@ -78,7 +146,7 @@ interface ChurchContextType {
   submitGeneralServiceReport: (data: Partial<GeneralServiceReport>) => Promise<GeneralServiceReport>;
   editGeneralServiceReport: (id: string, data: Partial<GeneralServiceReport>) => Promise<void>;
   deleteGeneralServiceReport: (id: string) => Promise<void>;
-  // Church Structure (C3s, Service Teams, Ministries) Add / Edit / Delete
+  // Church Structure Add / Edit / Delete
   addC3Centre: (data: Omit<C3Centre, 'id'>) => Promise<C3Centre>;
   editC3Centre: (id: string, data: Partial<C3Centre>) => Promise<void>;
   deleteC3Centre: (id: string) => Promise<void>;
@@ -95,11 +163,11 @@ interface ChurchContextType {
     note: string
   ) => Promise<void>;
   resetToSampleData: () => void;
+  auditLogs: AuditLog[];
+  loadAuditLogs: () => Promise<void>;
 }
 
 const ChurchContext = createContext<ChurchContextType | undefined>(undefined);
-
-const SESSION_KEY = 'cfc_session_user';
 
 export function ChurchProvider({ children }: { children: React.ReactNode }) {
   // -------------------------------------------------------------------------
@@ -117,9 +185,40 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+
+  // Offline-first states
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // Syncing lock ref
+  const isSyncingRef = useRef(false);
 
   // -------------------------------------------------------------------------
-  // Load data from Neon DB on mount (if DB_ENABLED) or restore session
+  // Local cache update helper
+  // -------------------------------------------------------------------------
+  const updateLocalCache = useCallback((overrides?: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cacheObj = {
+        c3Centres,
+        serviceTeams,
+        ministryTeams,
+        c3Reports,
+        serviceTeamReports,
+        ministryReports,
+        generalServices,
+        allUsers,
+        cachedAt: new Date().toISOString(),
+        ...overrides,
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObj));
+    } catch { /* storage full or quota */ }
+  }, [c3Centres, serviceTeams, ministryTeams, c3Reports, serviceTeamReports, ministryReports, generalServices, allUsers]);
+
+  // -------------------------------------------------------------------------
+  // Load data from Neon DB (with instant fallback to local cache)
   // -------------------------------------------------------------------------
   const loadFromDB = useCallback(async (user: UserProfile) => {
     if (!DB_ENABLED) return;
@@ -151,17 +250,111 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       if (usersRes.users && usersRes.users.length > 0) {
         setAllUsers(usersRes.users);
       }
+
+      // Update offline cache with the fresh server data
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          c3Reports: c3Res.data,
+          serviceTeamReports: stRes.data,
+          ministryReports: minRes.data,
+          generalServices: genRes.data,
+          c3Centres: centresRes.data,
+          serviceTeams: teamsRes.data,
+          ministryTeams: ministriesRes.data,
+          allUsers: usersRes.users || DEMO_USERS,
+          cachedAt: new Date().toISOString(),
+        }));
+      }
     } catch (err) {
-      console.error('Failed to load data from DB, using mock data:', err);
+      console.warn('Network issue or offline: using cached local data', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Restore session on page reload
+  // -------------------------------------------------------------------------
+  // Replay queued offline mutations to Neon DB
+  // -------------------------------------------------------------------------
+  const syncOfflineOutbox = useCallback(async () => {
+    if (isSyncingRef.current || !DB_ENABLED) return;
+    const items = getStoredOutbox();
+    if (items.length === 0) {
+      setPendingSyncCount(0);
+      return;
+    }
+
+    isSyncingRef.current = true;
+    setIsSyncing(true);
+
+    const remainingItems: OutboxItem[] = [];
+
+    for (const item of items) {
+      try {
+        await apiFetch(item.url, {
+          method: item.method,
+          body: item.body ? JSON.stringify(item.body) : undefined,
+        });
+      } catch (err) {
+        console.error(`Failed to sync queued item ${item.label}:`, err);
+        remainingItems.push(item);
+      }
+    }
+
+    saveStoredOutbox(remainingItems);
+    setPendingSyncCount(remainingItems.length);
+    isSyncingRef.current = false;
+    setIsSyncing(false);
+
+    // Refresh state from DB if any item was synced
+    if (remainingItems.length < items.length) {
+      const saved = localStorage.getItem(SESSION_KEY);
+      if (saved) {
+        loadFromDB(JSON.parse(saved));
+      }
+    }
+  }, [loadFromDB]);
+
+  // -------------------------------------------------------------------------
+  // Online / Offline Detection & Initial Session / Cache Restore
+  // -------------------------------------------------------------------------
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check online status
+    setIsOnline(navigator.onLine);
+    setPendingSyncCount(getStoredOutbox().length);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncOfflineOutbox();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // 1. Instant Cache Hydration for Offline First
     try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.c3Reports) setC3Reports(data.c3Reports);
+        if (data.serviceTeamReports) setServiceTeamReports(data.serviceTeamReports);
+        if (data.ministryReports) setMinistryReports(data.ministryReports);
+        if (data.generalServices) setGeneralServices(data.generalServices);
+        if (data.c3Centres) setC3Centres(data.c3Centres);
+        if (data.serviceTeams) setServiceTeams(data.serviceTeams);
+        if (data.ministryTeams) setMinistryTeams(data.ministryTeams);
+        if (data.allUsers) setAllUsers(data.allUsers);
+      }
+    } catch { /* ignore cache parse errors */ }
+
+    // 2. Restore Persistent User Session from localStorage
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
       if (saved) {
         const user: UserProfile = JSON.parse(saved);
         setCurrentUser(user);
@@ -172,24 +365,29 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     finally {
       setIsAuthChecked(true);
     }
-  }, [loadFromDB]);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [loadFromDB, syncOfflineOutbox]);
 
   // -------------------------------------------------------------------------
-  // Auth
+  // Auth (Persistent with localStorage)
   // -------------------------------------------------------------------------
   const switchUser = useCallback((userId: string) => {
     let user: UserProfile | undefined;
-
-    // Try from allUsers first (may have DB users)
     user = allUsers.find((u) => u.id === userId);
-    // Fallback to DEMO_USERS
     if (!user) user = DEMO_USERS.find((u) => u.id === userId);
 
     if (user) {
       setCurrentUser(user);
       setIsLoggedIn(true);
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      }
       loadFromDB(user);
+      logAudit({ userId: user.id, userName: user.fullName, userRole: user.role, action: 'login', entityType: 'session' }).catch(() => {});
     }
   }, [allUsers, loadFromDB]);
 
@@ -199,23 +397,29 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       setCurrentUser(user);
       setIsLoggedIn(true);
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      }
       loadFromDB(user);
+      logAudit({ userId: user.id, userName: user.fullName, userRole: user.role, action: 'login', entityType: 'session' }).catch(() => {});
     }
   }, [allUsers, loadFromDB]);
 
   const logout = useCallback(() => {
+    logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'logout', entityType: 'session' }).catch(() => {});
     setIsLoggedIn(false);
-    sessionStorage.removeItem(SESSION_KEY);
-    // Reset to mock data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(SESSION_KEY);
+    }
+    // Revert to demo state
     setC3Reports(MOCK_C3_REPORTS);
     setServiceTeamReports(MOCK_SERVICE_TEAM_REPORTS);
     setMinistryReports(MOCK_MINISTRY_REPORTS);
     setGeneralServices(MOCK_GENERAL_SERVICES);
-  }, []);
+  }, [currentUser]);
 
   // -------------------------------------------------------------------------
-  // C3 Reports
+  // C3 Reports CRUD (Offline-Ready)
   // -------------------------------------------------------------------------
   const submitC3Report = useCallback(async (data: Partial<C3Report>): Promise<C3Report> => {
     const male = Number(data.maleAttendance || 0);
@@ -223,27 +427,11 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     const children = Number(data.childrenAttendance || 0);
     const matchedC3 = c3Centres.find((c) => c.id === data.c3Id);
 
-    if (DB_ENABLED) {
-      const res = await apiFetch<{ data: C3Report }>('/api/c3-reports', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
-      });
-      const newReport: C3Report = {
-        ...res.data,
-        c3Name: matchedC3?.name || data.c3Name || '',
-        zone: matchedC3?.zone || data.zone || '',
-        submittedByName: currentUser.fullName,
-      };
-      setC3Reports((prev) => [newReport, ...prev]);
-      return newReport;
-    }
-
-    // Local fallback
-    const newReport: C3Report = {
+    const clientReport: C3Report = {
       id: `c3rep-${Date.now()}`,
       c3Id: data.c3Id || currentUser.c3Id || '',
-      c3Name: matchedC3?.name || currentUser.c3Name || '',
-      zone: matchedC3?.zone || '',
+      c3Name: matchedC3?.name || currentUser.c3Name || data.c3Name || '',
+      zone: matchedC3?.zone || data.zone || '',
       meetingDate: data.meetingDate || new Date().toISOString().split('T')[0],
       topicTaught: data.topicTaught || '',
       maleAttendance: male,
@@ -263,16 +451,59 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setC3Reports((prev) => [newReport, ...prev]);
-    return newReport;
-  }, [c3Centres, currentUser]);
+
+    if (DB_ENABLED) {
+      try {
+        const res = await apiFetch<{ data: C3Report }>('/api/c3-reports', {
+          method: 'POST',
+          body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
+        });
+        const serverReport: C3Report = {
+          ...res.data,
+          c3Name: matchedC3?.name || data.c3Name || clientReport.c3Name,
+          zone: matchedC3?.zone || data.zone || clientReport.zone,
+          submittedByName: currentUser.fullName,
+        };
+        setC3Reports((prev) => [serverReport, ...prev]);
+        updateLocalCache({ c3Reports: [serverReport, ...c3Reports] });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'c3_report', entityId: serverReport.id, entityLabel: `${serverReport.c3Name} · ${serverReport.meetingDate}` }).catch(() => {});
+        return serverReport;
+      } catch (err) {
+        console.warn('Network issue: saving C3 report to offline outbox', err);
+        const count = queueOfflineMutation({
+          url: '/api/c3-reports',
+          method: 'POST',
+          body: { ...data, submittedBy: currentUser.id },
+          label: `Submit C3 Report (${clientReport.c3Name})`,
+        });
+        setPendingSyncCount(count);
+      }
+    }
+
+    // Apply locally (optimistic / offline fallback)
+    setC3Reports((prev) => [clientReport, ...prev]);
+    updateLocalCache({ c3Reports: [clientReport, ...c3Reports] });
+    return clientReport;
+  }, [c3Centres, currentUser, c3Reports, updateLocalCache]);
 
   const editC3Report = useCallback(async (id: string, data: Partial<C3Report>) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/c3-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      try {
+        await apiFetch(`/api/c3-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'c3_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing C3 report edit offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/c3-reports/${id}`,
+          method: 'PUT',
+          body: data,
+          label: `Edit C3 Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setC3Reports((prev) =>
-      prev.map((r) => {
+    setC3Reports((prev) => {
+      const updated = prev.map((r) => {
         if (r.id !== id) return r;
         const male = data.maleAttendance !== undefined ? Number(data.maleAttendance) : r.maleAttendance;
         const female = data.femaleAttendance !== undefined ? Number(data.femaleAttendance) : r.femaleAttendance;
@@ -286,43 +517,46 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
           zone: matchedC3?.zone || data.zone || r.zone,
           updatedAt: new Date().toISOString(),
         };
-      })
-    );
-  }, [c3Centres]);
+      });
+      updateLocalCache({ c3Reports: updated });
+      return updated;
+    });
+  }, [c3Centres, currentUser, updateLocalCache]);
 
   const deleteC3Report = useCallback(async (id: string) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/c3-reports/${id}`, { method: 'DELETE' });
+      try {
+        await apiFetch(`/api/c3-reports/${id}`, { method: 'DELETE' });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'c3_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing C3 report deletion offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/c3-reports/${id}`,
+          method: 'DELETE',
+          label: `Delete C3 Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setC3Reports((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+    setC3Reports((prev) => {
+      const remaining = prev.filter((r) => r.id !== id);
+      updateLocalCache({ c3Reports: remaining });
+      return remaining;
+    });
+  }, [currentUser, updateLocalCache]);
 
   // -------------------------------------------------------------------------
-  // Service Team Reports
+  // Service Team Reports CRUD (Offline-Ready)
   // -------------------------------------------------------------------------
   const submitServiceTeamReport = useCallback(async (data: Partial<ServiceTeamReport>): Promise<ServiceTeamReport> => {
     const present = Number(data.rosterPresentCount || 0);
     const absent = Number(data.rosterAbsentCount || 0);
     const matchedTeam = serviceTeams.find((t) => t.id === data.teamId);
 
-    if (DB_ENABLED) {
-      const res = await apiFetch<{ data: ServiceTeamReport }>('/api/service-team-reports', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
-      });
-      const newReport: ServiceTeamReport = {
-        ...res.data,
-        teamName: matchedTeam?.name || data.teamName || '',
-        submittedByName: currentUser.fullName,
-      };
-      setServiceTeamReports((prev) => [newReport, ...prev]);
-      return newReport;
-    }
-
-    const newReport: ServiceTeamReport = {
+    const clientReport: ServiceTeamReport = {
       id: `st-rep-${Date.now()}`,
       teamId: data.teamId || currentUser.serviceTeamId || '',
-      teamName: matchedTeam?.name || currentUser.serviceTeamName || '',
+      teamName: matchedTeam?.name || currentUser.serviceTeamName || data.teamName || '',
       serviceDate: data.serviceDate || new Date().toISOString().split('T')[0],
       serviceType: data.serviceType || 'first_service',
       rosterPresentCount: present,
@@ -338,16 +572,57 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setServiceTeamReports((prev) => [newReport, ...prev]);
-    return newReport;
-  }, [serviceTeams, currentUser]);
+
+    if (DB_ENABLED) {
+      try {
+        const res = await apiFetch<{ data: ServiceTeamReport }>('/api/service-team-reports', {
+          method: 'POST',
+          body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
+        });
+        const serverReport: ServiceTeamReport = {
+          ...res.data,
+          teamName: matchedTeam?.name || data.teamName || clientReport.teamName,
+          submittedByName: currentUser.fullName,
+        };
+        setServiceTeamReports((prev) => [serverReport, ...prev]);
+        updateLocalCache({ serviceTeamReports: [serverReport, ...serviceTeamReports] });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'service_team_report', entityId: serverReport.id, entityLabel: `${serverReport.teamName} · ${serverReport.serviceDate}` }).catch(() => {});
+        return serverReport;
+      } catch (err) {
+        console.warn('Network issue: queueing Service Team report offline', err);
+        const count = queueOfflineMutation({
+          url: '/api/service-team-reports',
+          method: 'POST',
+          body: { ...data, submittedBy: currentUser.id },
+          label: `Submit Team Report (${clientReport.teamName})`,
+        });
+        setPendingSyncCount(count);
+      }
+    }
+
+    setServiceTeamReports((prev) => [clientReport, ...prev]);
+    updateLocalCache({ serviceTeamReports: [clientReport, ...serviceTeamReports] });
+    return clientReport;
+  }, [serviceTeams, currentUser, serviceTeamReports, updateLocalCache]);
 
   const editServiceTeamReport = useCallback(async (id: string, data: Partial<ServiceTeamReport>) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/service-team-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      try {
+        await apiFetch(`/api/service-team-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'service_team_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing team report edit offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/service-team-reports/${id}`,
+          method: 'PUT',
+          body: data,
+          label: `Edit Team Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setServiceTeamReports((prev) =>
-      prev.map((r) => {
+    setServiceTeamReports((prev) => {
+      const updated = prev.map((r) => {
         if (r.id !== id) return r;
         const present = data.rosterPresentCount !== undefined ? Number(data.rosterPresentCount) : r.rosterPresentCount;
         const absent = data.rosterAbsentCount !== undefined ? Number(data.rosterAbsentCount) : r.rosterAbsentCount;
@@ -358,41 +633,44 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
           rosterPresentCount: present, rosterAbsentCount: absent, totalOnDuty: present,
           updatedAt: new Date().toISOString(),
         };
-      })
-    );
-  }, [serviceTeams]);
+      });
+      updateLocalCache({ serviceTeamReports: updated });
+      return updated;
+    });
+  }, [serviceTeams, currentUser, updateLocalCache]);
 
   const deleteServiceTeamReport = useCallback(async (id: string) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/service-team-reports/${id}`, { method: 'DELETE' });
+      try {
+        await apiFetch(`/api/service-team-reports/${id}`, { method: 'DELETE' });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'service_team_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing team report delete offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/service-team-reports/${id}`,
+          method: 'DELETE',
+          label: `Delete Team Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setServiceTeamReports((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+    setServiceTeamReports((prev) => {
+      const remaining = prev.filter((r) => r.id !== id);
+      updateLocalCache({ serviceTeamReports: remaining });
+      return remaining;
+    });
+  }, [currentUser, updateLocalCache]);
 
   // -------------------------------------------------------------------------
-  // Ministry Reports
+  // Ministry Reports CRUD (Offline-Ready)
   // -------------------------------------------------------------------------
   const submitMinistryReport = useCallback(async (data: Partial<MinistryReport>): Promise<MinistryReport> => {
     const matchedMin = ministryTeams.find((m) => m.id === data.ministryId);
 
-    if (DB_ENABLED) {
-      const res = await apiFetch<{ data: MinistryReport }>('/api/ministry-reports', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
-      });
-      const newReport: MinistryReport = {
-        ...res.data,
-        ministryName: matchedMin?.name || data.ministryName || '',
-        submittedByName: currentUser.fullName,
-      };
-      setMinistryReports((prev) => [newReport, ...prev]);
-      return newReport;
-    }
-
-    const newReport: MinistryReport = {
+    const clientReport: MinistryReport = {
       id: `minrep-${Date.now()}`,
       ministryId: data.ministryId || currentUser.ministryId || '',
-      ministryName: matchedMin?.name || currentUser.ministryName || '',
+      ministryName: matchedMin?.name || currentUser.ministryName || data.ministryName || '',
       meetingDate: data.meetingDate || new Date().toISOString().split('T')[0],
       reportTitle: data.reportTitle || 'Monthly Fellowship Report',
       totalAttendance: Number(data.totalAttendance || 0),
@@ -408,16 +686,57 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setMinistryReports((prev) => [newReport, ...prev]);
-    return newReport;
-  }, [ministryTeams, currentUser]);
+
+    if (DB_ENABLED) {
+      try {
+        const res = await apiFetch<{ data: MinistryReport }>('/api/ministry-reports', {
+          method: 'POST',
+          body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
+        });
+        const serverReport: MinistryReport = {
+          ...res.data,
+          ministryName: matchedMin?.name || data.ministryName || clientReport.ministryName,
+          submittedByName: currentUser.fullName,
+        };
+        setMinistryReports((prev) => [serverReport, ...prev]);
+        updateLocalCache({ ministryReports: [serverReport, ...ministryReports] });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'ministry_report', entityId: serverReport.id, entityLabel: `${serverReport.ministryName} · ${serverReport.meetingDate}` }).catch(() => {});
+        return serverReport;
+      } catch (err) {
+        console.warn('Network issue: queueing ministry report offline', err);
+        const count = queueOfflineMutation({
+          url: '/api/ministry-reports',
+          method: 'POST',
+          body: { ...data, submittedBy: currentUser.id },
+          label: `Submit Ministry Report (${clientReport.ministryName})`,
+        });
+        setPendingSyncCount(count);
+      }
+    }
+
+    setMinistryReports((prev) => [clientReport, ...prev]);
+    updateLocalCache({ ministryReports: [clientReport, ...ministryReports] });
+    return clientReport;
+  }, [ministryTeams, currentUser, ministryReports, updateLocalCache]);
 
   const editMinistryReport = useCallback(async (id: string, data: Partial<MinistryReport>) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/ministry-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      try {
+        await apiFetch(`/api/ministry-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'ministry_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing ministry report edit offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/ministry-reports/${id}`,
+          method: 'PUT',
+          body: data,
+          label: `Edit Ministry Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setMinistryReports((prev) =>
-      prev.map((r) => {
+    setMinistryReports((prev) => {
+      const updated = prev.map((r) => {
         if (r.id !== id) return r;
         const matchedMin = data.ministryId ? ministryTeams.find((m) => m.id === data.ministryId) : undefined;
         return {
@@ -428,32 +747,39 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
           offeringAmount: data.offeringAmount !== undefined ? Number(data.offeringAmount) : r.offeringAmount,
           updatedAt: new Date().toISOString(),
         };
-      })
-    );
-  }, [ministryTeams]);
+      });
+      updateLocalCache({ ministryReports: updated });
+      return updated;
+    });
+  }, [ministryTeams, currentUser, updateLocalCache]);
 
   const deleteMinistryReport = useCallback(async (id: string) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/ministry-reports/${id}`, { method: 'DELETE' });
+      try {
+        await apiFetch(`/api/ministry-reports/${id}`, { method: 'DELETE' });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'ministry_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing ministry report delete offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/ministry-reports/${id}`,
+          method: 'DELETE',
+          label: `Delete Ministry Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setMinistryReports((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+    setMinistryReports((prev) => {
+      const remaining = prev.filter((r) => r.id !== id);
+      updateLocalCache({ ministryReports: remaining });
+      return remaining;
+    });
+  }, [currentUser, updateLocalCache]);
 
   // -------------------------------------------------------------------------
-  // General Service Reports
+  // General Service Reports CRUD (Offline-Ready)
   // -------------------------------------------------------------------------
   const submitGeneralServiceReport = useCallback(async (data: Partial<GeneralServiceReport>): Promise<GeneralServiceReport> => {
-    if (DB_ENABLED) {
-      const res = await apiFetch<{ data: GeneralServiceReport }>('/api/general-service-reports', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
-      });
-      const newReport: GeneralServiceReport = { ...res.data, submittedByName: currentUser.fullName };
-      setGeneralServices((prev) => [newReport, ...prev]);
-      return newReport;
-    }
-
-    const newReport: GeneralServiceReport = {
+    const clientReport: GeneralServiceReport = {
       id: `gen-${Date.now()}`,
       serviceDate: data.serviceDate || new Date().toISOString().split('T')[0],
       serviceType: data.serviceType || 'first_service',
@@ -471,16 +797,53 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       submittedByName: currentUser.fullName,
       createdAt: new Date().toISOString(),
     };
-    setGeneralServices((prev) => [newReport, ...prev]);
-    return newReport;
-  }, [currentUser]);
+
+    if (DB_ENABLED) {
+      try {
+        const res = await apiFetch<{ data: GeneralServiceReport }>('/api/general-service-reports', {
+          method: 'POST',
+          body: JSON.stringify({ ...data, submittedBy: currentUser.id }),
+        });
+        const serverReport: GeneralServiceReport = { ...res.data, submittedByName: currentUser.fullName };
+        setGeneralServices((prev) => [serverReport, ...prev]);
+        updateLocalCache({ generalServices: [serverReport, ...generalServices] });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'general_service_report', entityId: serverReport.id, entityLabel: `${serverReport.serviceType} · ${serverReport.serviceDate}` }).catch(() => {});
+        return serverReport;
+      } catch (err) {
+        console.warn('Network issue: queueing Sunday service report offline', err);
+        const count = queueOfflineMutation({
+          url: '/api/general-service-reports',
+          method: 'POST',
+          body: { ...data, submittedBy: currentUser.id },
+          label: `Submit Sunday Report (${clientReport.serviceDate})`,
+        });
+        setPendingSyncCount(count);
+      }
+    }
+
+    setGeneralServices((prev) => [clientReport, ...prev]);
+    updateLocalCache({ generalServices: [clientReport, ...generalServices] });
+    return clientReport;
+  }, [currentUser, generalServices, updateLocalCache]);
 
   const editGeneralServiceReport = useCallback(async (id: string, data: Partial<GeneralServiceReport>) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/general-service-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      try {
+        await apiFetch(`/api/general-service-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'general_service_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing Sunday report edit offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/general-service-reports/${id}`,
+          method: 'PUT',
+          body: data,
+          label: `Edit Sunday Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setGeneralServices((prev) =>
-      prev.map((r) => {
+    setGeneralServices((prev) => {
+      const updated = prev.map((r) => {
         if (r.id !== id) return r;
         const male = data.maleCount !== undefined ? Number(data.maleCount) : r.maleCount;
         const female = data.femaleCount !== undefined ? Number(data.femaleCount) : r.femaleCount;
@@ -490,19 +853,36 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
           maleCount: male, femaleCount: female, childrenCount: children,
           totalAttendance: male + female + children || Number(data.totalAttendance || r.totalAttendance),
         };
-      })
-    );
-  }, []);
+      });
+      updateLocalCache({ generalServices: updated });
+      return updated;
+    });
+  }, [currentUser, updateLocalCache]);
 
   const deleteGeneralServiceReport = useCallback(async (id: string) => {
     if (DB_ENABLED) {
-      await apiFetch(`/api/general-service-reports/${id}`, { method: 'DELETE' });
+      try {
+        await apiFetch(`/api/general-service-reports/${id}`, { method: 'DELETE' });
+        logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'general_service_report', entityId: id }).catch(() => {});
+      } catch (err) {
+        console.warn('Network issue: queueing Sunday report delete offline', err);
+        const count = queueOfflineMutation({
+          url: `/api/general-service-reports/${id}`,
+          method: 'DELETE',
+          label: `Delete Sunday Report (${id})`,
+        });
+        setPendingSyncCount(count);
+      }
     }
-    setGeneralServices((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+    setGeneralServices((prev) => {
+      const remaining = prev.filter((r) => r.id !== id);
+      updateLocalCache({ generalServices: remaining });
+      return remaining;
+    });
+  }, [currentUser, updateLocalCache]);
 
   // -------------------------------------------------------------------------
-  // Report Review (pastor approval/rejection)
+  // Report Review & Approval (Offline-Ready)
   // -------------------------------------------------------------------------
   const updateReportReview = useCallback(async (
     type: 'c3' | 'service_team' | 'ministry',
@@ -514,105 +894,191 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     const isAssocTeams = currentUser.role === 'associate_pastor_service_teams';
     const isResident = currentUser.role === 'resident_pastor';
 
+    const action = newStatus === 'approved_by_resident_pastor'
+      ? 'approve'
+      : newStatus === 'reviewed_by_associate'
+      ? 'review'
+      : 'request_revision';
+
     if (type === 'c3') {
       const patch: Partial<C3Report> = {
         status: newStatus,
         associatePastorNotes: isAssocC3 ? note : undefined,
         residentPastorNotes: isResident ? note : undefined,
       };
-      if (DB_ENABLED) await apiFetch(`/api/c3-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
-      setC3Reports((prev) => prev.map((r) => r.id === reportId ? {
-        ...r, status: newStatus,
-        associatePastorNotes: isAssocC3 ? note : r.associatePastorNotes,
-        residentPastorNotes: isResident ? note : r.residentPastorNotes,
-        updatedAt: new Date().toISOString(),
-      } : r));
+      if (DB_ENABLED) {
+        try {
+          await apiFetch(`/api/c3-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
+          logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action, entityType: 'c3_report', entityId: reportId, details: { note, status: newStatus } }).catch(() => {});
+        } catch {
+          const count = queueOfflineMutation({
+            url: `/api/c3-reports/${reportId}`,
+            method: 'PUT',
+            body: patch,
+            label: `Review C3 Report (${reportId} -> ${newStatus})`,
+          });
+          setPendingSyncCount(count);
+        }
+      }
+      setC3Reports((prev) => {
+        const updated = prev.map((r) => r.id === reportId ? {
+          ...r, status: newStatus,
+          associatePastorNotes: isAssocC3 ? note : r.associatePastorNotes,
+          residentPastorNotes: isResident ? note : r.residentPastorNotes,
+          updatedAt: new Date().toISOString(),
+        } : r);
+        updateLocalCache({ c3Reports: updated });
+        return updated;
+      });
     } else if (type === 'service_team') {
       const patch: Partial<ServiceTeamReport> = {
         status: newStatus,
         associatePastorNotes: isAssocTeams ? note : undefined,
         residentPastorNotes: isResident ? note : undefined,
       };
-      if (DB_ENABLED) await apiFetch(`/api/service-team-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
-      setServiceTeamReports((prev) => prev.map((r) => r.id === reportId ? {
-        ...r, status: newStatus,
-        associatePastorNotes: isAssocTeams ? note : r.associatePastorNotes,
-        residentPastorNotes: isResident ? note : r.residentPastorNotes,
-        updatedAt: new Date().toISOString(),
-      } : r));
+      if (DB_ENABLED) {
+        try {
+          await apiFetch(`/api/service-team-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
+          logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action, entityType: 'service_team_report', entityId: reportId, details: { note, status: newStatus } }).catch(() => {});
+        } catch {
+          const count = queueOfflineMutation({
+            url: `/api/service-team-reports/${reportId}`,
+            method: 'PUT',
+            body: patch,
+            label: `Review Team Report (${reportId} -> ${newStatus})`,
+          });
+          setPendingSyncCount(count);
+        }
+      }
+      setServiceTeamReports((prev) => {
+        const updated = prev.map((r) => r.id === reportId ? {
+          ...r, status: newStatus,
+          associatePastorNotes: isAssocTeams ? note : r.associatePastorNotes,
+          residentPastorNotes: isResident ? note : r.residentPastorNotes,
+          updatedAt: new Date().toISOString(),
+        } : r);
+        updateLocalCache({ serviceTeamReports: updated });
+        return updated;
+      });
     } else {
       const patch: Partial<MinistryReport> = { status: newStatus, pastoralNotes: note };
-      if (DB_ENABLED) await apiFetch(`/api/ministry-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
-      setMinistryReports((prev) => prev.map((r) => r.id === reportId ? {
-        ...r, status: newStatus, pastoralNotes: note, updatedAt: new Date().toISOString(),
-      } : r));
+      if (DB_ENABLED) {
+        try {
+          await apiFetch(`/api/ministry-reports/${reportId}`, { method: 'PUT', body: JSON.stringify(patch) });
+          logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action, entityType: 'ministry_report', entityId: reportId, details: { note, status: newStatus } }).catch(() => {});
+        } catch {
+          const count = queueOfflineMutation({
+            url: `/api/ministry-reports/${reportId}`,
+            method: 'PUT',
+            body: patch,
+            label: `Review Ministry Report (${reportId} -> ${newStatus})`,
+          });
+          setPendingSyncCount(count);
+        }
+      }
+      setMinistryReports((prev) => {
+        const updated = prev.map((r) => r.id === reportId ? {
+          ...r, status: newStatus, pastoralNotes: note, updatedAt: new Date().toISOString(),
+        } : r);
+        updateLocalCache({ ministryReports: updated });
+        return updated;
+      });
     }
-  }, [currentUser]);
+  }, [currentUser, updateLocalCache]);
 
   // -------------------------------------------------------------------------
-  // Church Organs CRUD
+  // Church Structure (C3s, Service Teams, Ministries) CRUD
   // -------------------------------------------------------------------------
   const addC3Centre = useCallback(async (data: Omit<C3Centre, 'id'>): Promise<C3Centre> => {
     if (DB_ENABLED) {
       const res = await apiFetch<{ data: C3Centre }>('/api/c3-centres', { method: 'POST', body: JSON.stringify(data) });
       setC3Centres((prev) => [...prev, res.data]);
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'c3_centre', entityId: res.data.id, entityLabel: res.data.name }).catch(() => {});
       return res.data;
     }
     const newCentre: C3Centre = { ...data, id: `c3-${Date.now()}`, isActive: true };
     setC3Centres((prev) => [...prev, newCentre]);
     return newCentre;
-  }, []);
+  }, [currentUser]);
 
   const editC3Centre = useCallback(async (id: string, data: Partial<C3Centre>) => {
-    if (DB_ENABLED) await apiFetch(`/api/c3-centres/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/c3-centres/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'c3_centre', entityId: id }).catch(() => {});
+    }
     setC3Centres((prev) => prev.map((c) => c.id === id ? { ...c, ...data } : c));
-  }, []);
+  }, [currentUser]);
 
   const deleteC3Centre = useCallback(async (id: string) => {
-    if (DB_ENABLED) await apiFetch(`/api/c3-centres/${id}`, { method: 'DELETE' });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/c3-centres/${id}`, { method: 'DELETE' });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'c3_centre', entityId: id }).catch(() => {});
+    }
     setC3Centres((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+  }, [currentUser]);
 
   const addServiceTeam = useCallback(async (data: Omit<ServiceTeam, 'id'>): Promise<ServiceTeam> => {
     if (DB_ENABLED) {
       const res = await apiFetch<{ data: ServiceTeam }>('/api/service-teams', { method: 'POST', body: JSON.stringify(data) });
       setServiceTeams((prev) => [...prev, res.data]);
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'service_team', entityId: res.data.id, entityLabel: res.data.name }).catch(() => {});
       return res.data;
     }
     const newTeam: ServiceTeam = { ...data, id: `team-${Date.now()}`, isActive: true };
     setServiceTeams((prev) => [...prev, newTeam]);
     return newTeam;
-  }, []);
+  }, [currentUser]);
 
   const editServiceTeam = useCallback(async (id: string, data: Partial<ServiceTeam>) => {
-    if (DB_ENABLED) await apiFetch(`/api/service-teams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/service-teams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'service_team', entityId: id }).catch(() => {});
+    }
     setServiceTeams((prev) => prev.map((t) => t.id === id ? { ...t, ...data } : t));
-  }, []);
+  }, [currentUser]);
 
   const deleteServiceTeam = useCallback(async (id: string) => {
-    if (DB_ENABLED) await apiFetch(`/api/service-teams/${id}`, { method: 'DELETE' });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/service-teams/${id}`, { method: 'DELETE' });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'service_team', entityId: id }).catch(() => {});
+    }
     setServiceTeams((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  }, [currentUser]);
 
   const addMinistryTeam = useCallback(async (data: Omit<MinistryTeam, 'id'>): Promise<MinistryTeam> => {
     if (DB_ENABLED) {
       const res = await apiFetch<{ data: MinistryTeam }>('/api/ministry-teams', { method: 'POST', body: JSON.stringify(data) });
       setMinistryTeams((prev) => [...prev, res.data]);
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'create', entityType: 'ministry_team', entityId: res.data.id, entityLabel: res.data.name }).catch(() => {});
       return res.data;
     }
     const newMin: MinistryTeam = { ...data, id: `min-${Date.now()}`, isActive: true };
     setMinistryTeams((prev) => [...prev, newMin]);
     return newMin;
-  }, []);
+  }, [currentUser]);
 
   const editMinistryTeam = useCallback(async (id: string, data: Partial<MinistryTeam>) => {
-    if (DB_ENABLED) await apiFetch(`/api/ministry-teams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/ministry-teams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'edit', entityType: 'ministry_team', entityId: id }).catch(() => {});
+    }
     setMinistryTeams((prev) => prev.map((m) => m.id === id ? { ...m, ...data } : m));
-  }, []);
+  }, [currentUser]);
 
   const deleteMinistryTeam = useCallback(async (id: string) => {
-    if (DB_ENABLED) await apiFetch(`/api/ministry-teams/${id}`, { method: 'DELETE' });
+    if (DB_ENABLED) {
+      await apiFetch(`/api/ministry-teams/${id}`, { method: 'DELETE' });
+      logAudit({ userId: currentUser.id, userName: currentUser.fullName, userRole: currentUser.role, action: 'delete', entityType: 'ministry_team', entityId: id }).catch(() => {});
+    }
     setMinistryTeams((prev) => prev.filter((m) => m.id !== id));
+  }, [currentUser]);
+
+  const loadAuditLogs = useCallback(async () => {
+    if (!DB_ENABLED) return;
+    try {
+      const res = await apiFetch<{ data: AuditLog[] }>('/api/audit-logs?limit=100');
+      setAuditLogs(res.data);
+    } catch { /* non-critical */ }
   }, []);
 
   const resetToSampleData = useCallback(() => {
@@ -624,7 +1090,11 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     setServiceTeams(MOCK_SERVICE_TEAMS);
     setMinistryTeams(MOCK_MINISTRY_TEAMS);
     setCurrentUser(DEMO_USERS[0]);
-    sessionStorage.removeItem(SESSION_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(OUTBOX_KEY);
+    }
   }, []);
 
   // -------------------------------------------------------------------------
@@ -677,6 +1147,10 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn,
         isAuthChecked,
         isLoading,
+        isOnline,
+        pendingSyncCount,
+        isSyncing,
+        syncOfflineOutbox,
         switchUser,
         switchRole,
         logout,
@@ -703,6 +1177,8 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         deleteMinistryTeam,
         updateReportReview,
         resetToSampleData,
+        auditLogs,
+        loadAuditLogs,
       }}
     >
       {children}

@@ -34,8 +34,10 @@ import {
   Trash2,
   Building2,
   Settings,
+  Activity,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import ActivityLogView from '@/components/ActivityLogView';
 
 const AttendanceTrendChart = dynamic(
   () => import('@/components/DashboardCharts').then((mod) => mod.AttendanceTrendChart),
@@ -81,7 +83,7 @@ import {
   exportConsolidatedPastoralBriefPDF,
 } from '@/lib/exportUtils';
 
-type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service';
+type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service' | 'activity';
 
 export default function ChurchDashboard() {
   const {
@@ -205,6 +207,7 @@ export default function ChurchDashboard() {
   const canSeeMinistriesTab = isPastor || isMinistryLeader;
   const canSeeApprovals     = isPastor;
   const canSeeExports       = isPastor;
+  const canSeeActivity      = isPastor;
 
   // Helper status color - Blue, Green, Black, White, Red ONLY where necessary
   const getStatusBadge = (status: ReportStatus) => {
@@ -442,10 +445,10 @@ export default function ChurchDashboard() {
       </section>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-8">
         
-        {/* Navigation Tabs — role-gated */}
-        <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-200">
+        {/* Navigation Tabs — role-gated, horizontally scrollable on mobile */}
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-200 overflow-x-auto no-scrollbar flex-nowrap md:flex-wrap">
 
           {canSeeOverview && (
             <button
@@ -551,7 +554,7 @@ export default function ChurchDashboard() {
           {canSeeExports && (
             <button
               onClick={() => setActiveTab('exports')}
-              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition ${
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition ${
                 activeTab === 'exports'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
@@ -559,6 +562,20 @@ export default function ChurchDashboard() {
             >
               <Download className="w-4 h-4" />
               <span>Reports &amp; Exports</span>
+            </button>
+          )}
+
+          {canSeeActivity && (
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition ${
+                activeTab === 'activity'
+                  ? 'bg-[#0a719e] text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Activity Log</span>
             </button>
           )}
 
@@ -2046,6 +2063,11 @@ export default function ChurchDashboard() {
 
           </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* TAB 8: AUDIT TRAIL / ACTIVITY LOG                                         */}
+        {/* ========================================================================= */}
+        {activeTab === 'activity' && <ActivityLogView />}
       </main>
 
       {/* Footer */}
@@ -2077,6 +2099,87 @@ export default function ChurchDashboard() {
           © {new Date().getFullYear()} Christ Family Ministries. Senior Pastors: Pastors Arome &amp; Avese Tokula. Reporting Portal for Makurdi Branch.
         </div>
       </footer>
+
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-1 flex justify-around items-center shadow-lg">
+        {canSeeOverview && (
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'overview' ? 'text-[#0a719e]' : 'text-slate-500'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 mb-0.5" />
+            <span>Overview</span>
+          </button>
+        )}
+        {canSeeSundayService && (
+          <button
+            onClick={() => setActiveTab('sunday_service')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'sunday_service' ? 'text-[#0a719e]' : 'text-slate-500'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 mb-0.5" />
+            <span>Sunday</span>
+          </button>
+        )}
+        {canSeeC3Tab && (
+          <button
+            onClick={() => setActiveTab('c3')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'c3' ? 'text-emerald-700' : 'text-slate-500'
+            }`}
+          >
+            <Users className="w-4 h-4 mb-0.5" />
+            <span>C3s</span>
+          </button>
+        )}
+        {canSeeTeamsTab && (
+          <button
+            onClick={() => setActiveTab('service_teams')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'service_teams' ? 'text-[#0a719e]' : 'text-slate-500'
+            }`}
+          >
+            <Wrench className="w-4 h-4 mb-0.5" />
+            <span>Teams</span>
+          </button>
+        )}
+        {canSeeMinistriesTab && (
+          <button
+            onClick={() => setActiveTab('ministries')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'ministries' ? 'text-teal-700' : 'text-slate-500'
+            }`}
+          >
+            <Heart className="w-4 h-4 mb-0.5" />
+            <span>Ministries</span>
+          </button>
+        )}
+        {canSeeApprovals && (
+          <button
+            onClick={() => setActiveTab('approvals')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'approvals' ? 'text-slate-900' : 'text-slate-500'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 mb-0.5" />
+            <span>Approvals</span>
+          </button>
+        )}
+        {canSeeActivity && (
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'activity' ? 'text-[#0a719e]' : 'text-slate-500'
+            }`}
+          >
+            <Activity className="w-4 h-4 mb-0.5" />
+            <span>Activity</span>
+          </button>
+        )}
+      </nav>
 
       {/* Interactive Modals */}
       <C3ReportModal

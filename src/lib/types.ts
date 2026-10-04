@@ -171,3 +171,16 @@ export interface DashboardMetricSummary {
   activeC3sCount: number;
   activeTeamsCount: number;
 }
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  action: 'create' | 'edit' | 'delete' | 'review' | 'approve' | 'request_revision' | 'login' | 'logout';
+  entityType: 'c3_report' | 'service_team_report' | 'ministry_report' | 'general_service_report' | 'c3_centre' | 'service_team' | 'ministry_team' | 'session';
+  entityId?: string;
+  entityLabel?: string;
+  details?: Record<string, unknown>;
+  createdAt: string;
+}
