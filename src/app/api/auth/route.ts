@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 
-// GET /api/auth/login — look up user by email, return profile
+// POST /api/auth — look up user by email, return profile
 export async function POST(req: NextRequest) {
   try {
     const sql = getDb();
-    const { email } = await req.json();
+    const body = await req.json();
+    const email: string = (body?.email ?? '').toLowerCase().trim();
+
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
@@ -13,22 +15,22 @@ export async function POST(req: NextRequest) {
     const rows = await sql`
       SELECT
         p.id,
-        p.full_name   AS "fullName",
+        p.full_name        AS "fullName",
         p.email,
         p.phone,
         p.role,
-        p.avatar_url  AS "avatarUrl",
-        p.c3_id       AS "c3Id",
-        c3.name       AS "c3Name",
-        p.service_team_id AS "serviceTeamId",
-        st.name       AS "serviceTeamName",
-        p.ministry_id AS "ministryId",
-        mt.name       AS "ministryName"
+        p.avatar_url       AS "avatarUrl",
+        p.c3_id            AS "c3Id",
+        c3.name            AS "c3Name",
+        p.service_team_id  AS "serviceTeamId",
+        st.name            AS "serviceTeamName",
+        p.ministry_id      AS "ministryId",
+        mt.name            AS "ministryName"
       FROM profiles p
-      LEFT JOIN c3_centres  c3 ON c3.id = p.c3_id
+      LEFT JOIN c3_centres   c3 ON c3.id = p.c3_id
       LEFT JOIN service_teams st ON st.id = p.service_team_id
       LEFT JOIN ministry_teams mt ON mt.id = p.ministry_id
-      WHERE LOWER(p.email) = LOWER(${email})
+      WHERE p.email = ${email}
       LIMIT 1
     `;
 
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ user: rows[0] });
   } catch (err) {
-    console.error('[POST /api/auth/login]', err);
+    console.error('[POST /api/auth]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
