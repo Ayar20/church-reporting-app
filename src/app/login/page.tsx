@@ -35,7 +35,7 @@ const DEFAULT_PASSWORDS: Record<string, string> = {
 };
 
 export default function LoginPage() {
-  const { switchUser, allUsers } = useChurch();
+  const { loginWithUser, allUsers } = useChurch();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -92,8 +92,8 @@ export default function LoginPage() {
         return;
       }
 
-      // 4. Authenticate & redirect
-      switchUser(user.id);
+      // 4. Authenticate & redirect — store the full DB user directly in session
+      loginWithUser(user);
       router.push('/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Authentication failed';

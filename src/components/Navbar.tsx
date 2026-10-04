@@ -1,18 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useChurch } from '@/lib/store';
 import { UserRole } from '@/lib/types';
 import {
   Download,
   LogOut,
+  Settings,
+  ChevronDown,
+  Shield,
+  User,
 } from 'lucide-react';
 import { exportConsolidatedPastoralBriefPDF } from '@/lib/exportUtils';
 import NotificationCenter from './NotificationCenter';
 import { useRouter } from 'next/navigation';
 
-export default function Navbar() {
+interface NavbarProps {
+  activeTab?: string;
+  onSelectTab?: (tab: 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service' | 'activity' | 'settings') => void;
+}
+
+export default function Navbar({ activeTab, onSelectTab }: NavbarProps) {
   const {
     currentUser,
     metrics,
@@ -47,6 +56,21 @@ export default function Navbar() {
   const handleExportBrief = () => {
     exportConsolidatedPastoralBriefPDF(metrics, c3Reports, serviceTeamReports, ministryReports);
   };
+
+  const isPastor = currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor');
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -92,7 +116,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2.5">
 
             {/* Quick Export Brief (visible to Pastors) */}
-            {(currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
+            {isPastor && (
               <button
                 onClick={handleExportBrief}
                 className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-sm"
@@ -106,37 +130,106 @@ export default function Navbar() {
             {/* Notification Bell */}
             <NotificationCenter />
 
-            {/* Current Logged In User Profile (Role switcher removed for production) */}
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-left">
-              <div className="w-8 h-8 rounded-full bg-white text-[#0a719e] flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-                {currentUser.fullName.charAt(0)}
-              </div>
-              <div className="hidden md:block">
-                <div className="text-xs font-semibold text-white leading-tight">
-                  {currentUser.fullName}
+            {/* User Profile with Interactive Dropdown (Settings & Sign Out under profile) */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-left transition cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-white/40"
+                aria-expanded={profileDropdownOpen}
+                aria-label="User profile and settings menu"
+              >
+                <div className="w-8 h-8 rounded-full bg-white text-[#0a719e] flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                  {currentUser.fullName.charAt(0)}
                 </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded border ${badge.bg}`}>
-                    {badge.label}
-                  </span>
-                  {(currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName) && (
-                    <span className="text-[10px] text-sky-100 font-light">
-                      • {currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName}
+                <div className="hidden md:block">
+                  <div className="text-xs font-semibold text-white leading-tight">
+                    {currentUser.fullName}
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded border ${badge.bg}`}>
+                      {badge.label}
                     </span>
-                  )}
+                    {(currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName) && (
+                      <span className="text-[10px] text-sky-100 font-light truncate max-w-[120px]">
+                        • {currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-white/70 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* Universal Sign Out button */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600 border border-rose-400/40 text-rose-100 hover:text-white font-semibold text-xs transition shadow-xs"
-              title="Sign Out of Portal"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+              {/* Dropdown Menu directly under user profile */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 text-slate-900 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* User Profile Summary Header */}
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-full bg-[#0a719e]/10 text-[#0a719e] flex items-center justify-center font-black text-base shrink-0">
+                        {currentUser.fullName.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-900 truncate">{currentUser.fullName}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
+                        <div className="mt-1">
+                          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badge.bg}`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settings Option under User Profile */}
+                  <div className="py-1">
+                    {isPastor && (
+                      <button
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          onSelectTab?.('settings');
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold transition ${
+                          activeTab === 'settings'
+                            ? 'bg-sky-50 text-[#0a719e]'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-sky-100 text-[#0a719e] flex items-center justify-center shrink-0">
+                          <Settings className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="font-bold text-slate-900">Settings</p>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">Admin</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-normal truncate">Users, Leaders, Units &amp; Roles</p>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Divider */}
+                    <div className="my-1 border-t border-slate-100" />
+
+                    {/* Sign Out Option */}
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                        <LogOut className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-rose-700">Sign Out</p>
+                        <p className="text-[11px] text-slate-400 font-normal">End your current session</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
           </div>
 

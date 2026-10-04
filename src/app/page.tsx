@@ -360,7 +360,7 @@ export default function ChurchDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+      <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
 
       {/* Role Banner / Context Bar */}
       <section className="bg-gradient-to-r from-[#0a719e] via-[#139fdd] to-[#0a719e] border-b border-[#085a7e] text-white py-3.5 px-4 sm:px-6 lg:px-8 shadow-inner">
@@ -591,7 +591,7 @@ export default function ChurchDashboard() {
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Settings</span>
+              <span>Settings &amp; Users</span>
             </button>
           )}
 

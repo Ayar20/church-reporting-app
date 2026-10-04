@@ -130,6 +130,7 @@ interface ChurchContextType {
   pendingSyncCount: number;
   isSyncing: boolean;
   syncOfflineOutbox: () => Promise<void>;
+  loginWithUser: (user: UserProfile) => void;
   switchUser: (userId: string) => void;
   switchRole: (role: UserRole) => void;
   logout: () => void;
@@ -379,6 +380,16 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
   // -------------------------------------------------------------------------
   // Auth (Persistent with localStorage)
   // -------------------------------------------------------------------------
+  const loginWithUser = useCallback((user: UserProfile) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    }
+    loadFromDB(user);
+    logAudit({ userId: user.id, userName: user.fullName, userRole: user.role, action: 'login', entityType: 'session' }).catch(() => {});
+  }, [loadFromDB]);
+
   const switchUser = useCallback((userId: string) => {
     let user: UserProfile | undefined;
     user = allUsers.find((u) => u.id === userId);
@@ -1232,6 +1243,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         pendingSyncCount,
         isSyncing,
         syncOfflineOutbox,
+        loginWithUser,
         switchUser,
         switchRole,
         logout,
