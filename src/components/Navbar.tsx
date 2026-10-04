@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { useChurch } from '@/lib/store';
 import { UserRole } from '@/lib/types';
 import {
-  ChevronDown,
-  RotateCcw,
   Download,
-  CheckCircle2,
   LogOut,
 } from 'lucide-react';
 import { exportConsolidatedPastoralBriefPDF } from '@/lib/exportUtils';
@@ -18,17 +15,13 @@ import { useRouter } from 'next/navigation';
 export default function Navbar() {
   const {
     currentUser,
-    allUsers,
-    switchUser,
     metrics,
     c3Reports,
     serviceTeamReports,
     ministryReports,
-    resetToSampleData,
     logout,
   } = useChurch();
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
@@ -113,126 +106,37 @@ export default function Navbar() {
             {/* Notification Bell */}
             <NotificationCenter />
 
-            {/* Role Switcher Dropdown — Admins/Pastors only */}
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition focus:outline-none focus:ring-2 focus:ring-sky-300/50"
-              >
-                <div className="w-8 h-8 rounded-full bg-white text-[#0a719e] flex items-center justify-center font-bold text-sm shadow-xs">
-                  {currentUser.fullName.charAt(0)}
+            {/* Current Logged In User Profile (Role switcher removed for production) */}
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-left">
+              <div className="w-8 h-8 rounded-full bg-white text-[#0a719e] flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                {currentUser.fullName.charAt(0)}
+              </div>
+              <div className="hidden md:block">
+                <div className="text-xs font-semibold text-white leading-tight">
+                  {currentUser.fullName}
                 </div>
-                <div className="hidden lg:block">
-                  <div className="text-xs font-semibold text-white leading-tight flex items-center gap-1.5">
-                    {currentUser.fullName}
-                    {(currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
-                      <ChevronDown className="w-3 h-3 text-sky-200" />
-                    )}
-                  </div>
+                <div className="flex items-center gap-1 mt-0.5">
                   <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded border ${badge.bg}`}>
                     {badge.label}
                   </span>
+                  {(currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName) && (
+                    <span className="text-[10px] text-sky-100 font-light">
+                      • {currentUser.c3Name || currentUser.serviceTeamName || currentUser.ministryName}
+                    </span>
+                  )}
                 </div>
-                {(currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
-                  <ChevronDown className="w-4 h-4 text-sky-200 lg:hidden" />
-                )}
-              </button>
-
-              {dropdownOpen && (currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setDropdownOpen(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 text-slate-800 divide-y divide-slate-100 animate-fadeIn">
-                    <div className="px-4 py-2 bg-sky-50/60">
-                      <p className="text-xs font-bold text-[#0a719e] uppercase tracking-wider">
-                        Interactive Role Switcher
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Test roles, permissions &amp; approval workflows
-                      </p>
-                    </div>
-
-                    <div className="max-h-64 overflow-y-auto py-1">
-                      {allUsers.map((u) => {
-                        const isCurrent = u.id === currentUser.id;
-                        const roleInfo = getRoleBadge(u.role);
-                        return (
-                          <button
-                            key={u.id}
-                            onClick={() => {
-                              switchUser(u.id);
-                              setDropdownOpen(false);
-                            }}
-                            className={`w-full px-4 py-2 text-left flex items-start gap-2.5 hover:bg-sky-50/70 transition ${
-                              isCurrent ? 'bg-sky-50 font-medium' : ''
-                            }`}
-                          >
-                            <div className="w-7 h-7 rounded-full bg-[#139fdd]/20 text-[#0a719e] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                              {u.fullName.charAt(0)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-slate-900 truncate">
-                                  {u.fullName}
-                                </span>
-                                {isCurrent && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0a719e] shrink-0" />
-                                )}
-                              </div>
-                              <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${roleInfo.bg}`}>
-                                {roleInfo.label}
-                              </span>
-                              {(u.c3Name || u.serviceTeamName || u.ministryName) && (
-                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                                  {u.c3Name || u.serviceTeamName || u.ministryName}
-                                </p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="p-2 bg-slate-50 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          resetToSampleData();
-                          setDropdownOpen(false);
-                        }}
-                        className="text-[11px] font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 transition px-2 py-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Reset Data
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setDropdownOpen(false);
-                        }}
-                        className="text-[11px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1 transition px-2 py-1"
-                      >
-                        <LogOut className="w-3 h-3" />
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              </div>
             </div>
 
-            {/* Sign Out button for non-pastoral users (no dropdown) */}
-            {!(currentUser.role === 'resident_pastor' || currentUser.role.startsWith('associate_pastor')) && (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-400/30 text-rose-100 font-semibold text-xs transition"
-                title="Sign Out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
-            )}
+            {/* Universal Sign Out button */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600 border border-rose-400/40 text-rose-100 hover:text-white font-semibold text-xs transition shadow-xs"
+              title="Sign Out of Portal"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
 
           </div>
 

@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import ActivityLogView from '@/components/ActivityLogView';
+import SettingsView from '@/components/SettingsView';
 
 const AttendanceTrendChart = dynamic(
   () => import('@/components/DashboardCharts').then((mod) => mod.AttendanceTrendChart),
@@ -83,7 +84,7 @@ import {
   exportConsolidatedPastoralBriefPDF,
 } from '@/lib/exportUtils';
 
-type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service' | 'activity';
+type ActiveTab = 'overview' | 'c3' | 'service_teams' | 'ministries' | 'approvals' | 'exports' | 'sunday_service' | 'activity' | 'settings';
 
 export default function ChurchDashboard() {
   const {
@@ -208,6 +209,7 @@ export default function ChurchDashboard() {
   const canSeeApprovals     = isPastor;
   const canSeeExports       = isPastor;
   const canSeeActivity      = isPastor;
+  const canSeeSettings      = isPastor;
 
   // Helper status color - Blue, Green, Black, White, Red ONLY where necessary
   const getStatusBadge = (status: ReportStatus) => {
@@ -576,6 +578,20 @@ export default function ChurchDashboard() {
             >
               <Activity className="w-4 h-4" />
               <span>Activity Log</span>
+            </button>
+          )}
+
+          {canSeeSettings && (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition ${
+                activeTab === 'settings'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
             </button>
           )}
 
@@ -2068,6 +2084,11 @@ export default function ChurchDashboard() {
         {/* TAB 8: AUDIT TRAIL / ACTIVITY LOG                                         */}
         {/* ========================================================================= */}
         {activeTab === 'activity' && <ActivityLogView />}
+
+        {/* ========================================================================= */}
+        {/* TAB 9: SETTINGS & LEADERSHIP ACCOUNTS                                     */}
+        {/* ========================================================================= */}
+        {activeTab === 'settings' && <SettingsView />}
       </main>
 
       {/* Footer */}
@@ -2177,6 +2198,17 @@ export default function ChurchDashboard() {
           >
             <Activity className="w-4 h-4 mb-0.5" />
             <span>Activity</span>
+          </button>
+        )}
+        {canSeeSettings && (
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-semibold transition ${
+              activeTab === 'settings' ? 'text-slate-900' : 'text-slate-500'
+            }`}
+          >
+            <Settings className="w-4 h-4 mb-0.5" />
+            <span>Settings</span>
           </button>
         )}
       </nav>

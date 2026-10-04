@@ -156,6 +156,10 @@ interface ChurchContextType {
   addMinistryTeam: (data: Omit<MinistryTeam, 'id'>) => Promise<MinistryTeam>;
   editMinistryTeam: (id: string, data: Partial<MinistryTeam>) => Promise<void>;
   deleteMinistryTeam: (id: string) => Promise<void>;
+  // User Management
+  addUser: (data: Omit<UserProfile, 'id'>) => Promise<UserProfile>;
+  editUser: (id: string, data: Partial<UserProfile>) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
   updateReportReview: (
     type: 'c3' | 'service_team' | 'ministry',
     reportId: string,
@@ -1073,6 +1077,83 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
     setMinistryTeams((prev) => prev.filter((m) => m.id !== id));
   }, [currentUser]);
 
+  // -------------------------------------------------------------------------
+  // User Management (Admin / Pastoral Settings)
+  // -------------------------------------------------------------------------
+  const addUser = useCallback(async (data: Omit<UserProfile, 'id'>): Promise<UserProfile> => {
+    if (DB_ENABLED) {
+      const res = await apiFetch<{ data: UserProfile }>('/api/users', { method: 'POST', body: JSON.stringify(data) });
+      const newUser: UserProfile = {
+        ...res.data,
+        c3Name: c3Centres.find((c) => c.id === data.c3Id)?.name,
+        serviceTeamName: serviceTeams.find((st) => st.id === data.serviceTeamId)?.name,
+        ministryName: ministryTeams.find((mt) => mt.id === data.ministryId)?.name,
+      };
+      setAllUsers((prev) => [...prev, newUser]);
+      logAudit({
+        userId: currentUser.id,
+        userName: currentUser.fullName,
+        userRole: currentUser.role,
+        action: 'create',
+        entityType: 'user',
+        entityId: newUser.id,
+        entityLabel: `${newUser.fullName} (${newUser.role})`,
+      }).catch(() => {});
+      return newUser;
+    }
+    const newUser: UserProfile = {
+      ...data,
+      id: `user-${Date.now()}`,
+      c3Name: c3Centres.find((c) => c.id === data.c3Id)?.name,
+      serviceTeamName: serviceTeams.find((st) => st.id === data.serviceTeamId)?.name,
+      ministryName: ministryTeams.find((mt) => mt.id === data.ministryId)?.name,
+    };
+    setAllUsers((prev) => [...prev, newUser]);
+    return newUser;
+  }, [c3Centres, serviceTeams, ministryTeams, currentUser]);
+
+  const editUser = useCallback(async (id: string, data: Partial<UserProfile>) => {
+    if (DB_ENABLED) {
+      await apiFetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      logAudit({
+        userId: currentUser.id,
+        userName: currentUser.fullName,
+        userRole: currentUser.role,
+        action: 'edit',
+        entityType: 'user',
+        entityId: id,
+        entityLabel: data.fullName,
+      }).catch(() => {});
+    }
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if (u.id !== id) return u;
+        return {
+          ...u,
+          ...data,
+          c3Name: data.c3Id !== undefined ? c3Centres.find((c) => c.id === data.c3Id)?.name : u.c3Name,
+          serviceTeamName: data.serviceTeamId !== undefined ? serviceTeams.find((st) => st.id === data.serviceTeamId)?.name : u.serviceTeamName,
+          ministryName: data.ministryId !== undefined ? ministryTeams.find((mt) => mt.id === data.ministryId)?.name : u.ministryName,
+        };
+      })
+    );
+  }, [c3Centres, serviceTeams, ministryTeams, currentUser]);
+
+  const deleteUser = useCallback(async (id: string) => {
+    if (DB_ENABLED) {
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+      logAudit({
+        userId: currentUser.id,
+        userName: currentUser.fullName,
+        userRole: currentUser.role,
+        action: 'delete',
+        entityType: 'user',
+        entityId: id,
+      }).catch(() => {});
+    }
+    setAllUsers((prev) => prev.filter((u) => u.id !== id));
+  }, [currentUser]);
+
   const loadAuditLogs = useCallback(async () => {
     if (!DB_ENABLED) return;
     try {
@@ -1175,6 +1256,9 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         addMinistryTeam,
         editMinistryTeam,
         deleteMinistryTeam,
+        addUser,
+        editUser,
+        deleteUser,
         updateReportReview,
         resetToSampleData,
         auditLogs,
