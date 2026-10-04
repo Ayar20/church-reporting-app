@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       LEFT JOIN c3_centres  c3 ON c3.id = p.c3_id
       LEFT JOIN service_teams st ON st.id = p.service_team_id
       LEFT JOIN ministry_teams mt ON mt.id = p.ministry_id
-      WHERE p.email = ${email}
+      WHERE LOWER(p.email) = LOWER(${email})
       LIMIT 1
     `;
 

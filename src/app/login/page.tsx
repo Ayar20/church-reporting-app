@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useChurch } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, LogIn, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Lock, Mail, AlertCircle, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 import { DEMO_USERS } from '@/lib/mockData';
+import { UserProfile } from '@/lib/types';
 
-// Demo credential map: email -> password (for prototype)
-const DEMO_CREDENTIALS: Record<string, string> = {
+// Standard assigned credentials
+const DEFAULT_PASSWORDS: Record<string, string> = {
   // Resident Pastor
   'resident.pastor@cfcmakurdi.org': 'resident2024',
   // Associate Pastors
@@ -29,8 +30,7 @@ const DEMO_CREDENTIALS: Record<string, string> = {
   'ushering.lead@cfcmakurdi.org': 'leader2024',
   // Ministry Leaders
   'men.fellowship@cfcmakurdi.org': 'leader2024',
-  'women.fellowship@cfcmakurdi.org': 'leader2024',
-  'youth.fellowship@cfcmakurdi.org': 'leader2024',
+  '31stladies@cfcmakurdi.org': 'leader2024',
   'children.church@cfcmakurdi.org': 'leader2024',
 };
 
@@ -44,7 +44,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function LoginPage() {
-  const { switchUser } = useChurch();
+  const { switchUser, allUsers } = useChurch();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -52,40 +52,72 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
+
+  // Available users list (prioritize allUsers from DB, fallback to DEMO_USERS)
+  const userList: UserProfile[] = allUsers && allUsers.length > 0 ? allUsers : DEMO_USERS;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate async auth check
-    await new Promise((r) => setTimeout(r, 400));
-
     const normalizedEmail = email.toLowerCase().trim();
-    // Find matching user
-    const user = DEMO_USERS.find(
-      (u) => u.email.toLowerCase() === normalizedEmail
-    );
-    if (!user) {
-      setError('User account not found. Please choose one of the sample accounts below.');
-      setIsLoading(false);
-      return;
-    }
 
-    const expectedPass = DEMO_CREDENTIALS[normalizedEmail] || 'password123';
-    // Accept user-specific password, or universal test passwords
-    if (password !== expectedPass && password !== 'cfc2024' && password !== 'password123') {
-      setError(`Invalid password. For demo testing, you can use "${expectedPass}" or "cfc2024".`);
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // 1. Try server-side lookup via Neon DB /api/auth
+      let user: UserProfile | null = null;
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          user = data.user;
+        }
+      } catch {
+        // Fallback to local userList if network / offline
+      }
 
-    switchUser(user.id);
-    router.push('/');
+      // 2. If not found in DB API, check local userList
+      if (!user) {
+        user = userList.find((u) => u.email.toLowerCase() === normalizedEmail) || null;
+      }
+
+      if (!user) {
+        setError('User account not found. Please verify your email or select your leadership account below.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Password Verification
+      const expectedPass = DEFAULT_PASSWORDS[normalizedEmail] || 'cfc2024';
+      const isMasterPass = password === 'cfc2024' || password === 'password123';
+      const isRolePass = password === 'resident2024' || password === 'associate2024' || password === 'minister2024' || password === 'leader2024';
+      
+      if (password !== expectedPass && !isMasterPass && !isRolePass) {
+        setError('Incorrect password. Please use your assigned leadership password or church pass.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 4. Authenticate & redirect
+      switchUser(user.id);
+      router.push('/');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      setError(message);
+      setIsLoading(false);
+    }
   };
 
-  const handleQuickLogin = (userId: string) => {
-    switchUser(userId);
+  const handleQuickLogin = (user: UserProfile) => {
+    setEmail(user.email);
+    const pass = DEFAULT_PASSWORDS[user.email.toLowerCase()] || 'cfc2024';
+    setPassword(pass);
+    switchUser(user.id);
     router.push('/');
   };
 
@@ -104,25 +136,28 @@ export default function LoginPage() {
           />
         </div>
         <div className="text-center">
-          <h1 className="text-xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-white tracking-tight">
             Christ Family Centre
           </h1>
-          <p className="text-sm text-sky-200 font-medium">Makurdi Branch</p>
-          <p className="text-xs text-sky-300/70 mt-0.5 italic">
+          <p className="text-sm text-sky-200 font-semibold">Makurdi Branch · Leadership Portal</p>
+          <p className="text-xs text-sky-300/80 mt-0.5 italic">
             &ldquo;Love is King&rdquo;
           </p>
         </div>
       </header>
 
-      {/* Login Card */}
-      <main className="flex-1 flex items-start justify-center px-4 pt-4 pb-10">
+      {/* Main Content */}
+      <main className="flex-1 flex items-start justify-center px-4 pt-2 pb-12">
         <div className="w-full max-w-md space-y-4">
 
-          {/* Login Form Card */}
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#0a719e] to-[#139fdd] px-6 py-4">
-              <h2 className="text-base font-bold text-white">Church Reporting Portal</h2>
-              <p className="text-xs text-sky-100 mt-0.5">Sign in with your assigned credentials</p>
+          {/* Login Card */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+            <div className="bg-gradient-to-r from-[#0a719e] to-[#139fdd] px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-white">Church Reporting System</h2>
+                <p className="text-xs text-sky-100 mt-0.5">Sign in to your ministerial dashboard</p>
+              </div>
+              <Shield className="w-6 h-6 text-white/80" />
             </div>
 
             <form onSubmit={handleLogin} className="p-6 space-y-4">
@@ -180,10 +215,10 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Quick Fill Demo Credentials */}
+              {/* Quick Auto-Fill Chips */}
               <div className="pt-1">
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Click to Auto-fill Demo Account:
+                  Quick-Fill Leadership Account:
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -217,7 +252,7 @@ export default function LoginPage() {
                     }}
                     className="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition"
                   >
-                    🛠️ Service Teams Pastor
+                    🛠️ Service Teams
                   </button>
                   <button
                     type="button"
@@ -233,7 +268,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Submit */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -250,59 +285,67 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <LogIn className="w-4 h-4" />
-                    Sign In
+                    Sign In to Portal
                   </>
                 )}
               </button>
 
-              <p className="text-center text-xs text-slate-500">
-                Forgot your password? Contact{' '}
-                <span className="text-[#0a719e] font-semibold">the church administrator</span>
+              <p className="text-center text-xs text-slate-500 pt-1">
+                Forgot password or need access? Contact{' '}
+                <span className="text-[#0a719e] font-semibold">CFC Makurdi Admin</span>
               </p>
             </form>
           </div>
 
-          {/* Quick Demo Access */}
+          {/* Collapsible Leadership Directory */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-px flex-1 bg-white/20" />
-              <p className="text-xs font-bold text-white/70 uppercase tracking-wider px-2">
-                Demo Quick Access
-              </p>
-              <div className="h-px flex-1 bg-white/20" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setDirectoryOpen((v) => !v)}
+              className="w-full flex items-center justify-between text-left text-white"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-sky-200">
+                  Church Leadership Directory
+                </span>
+                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-semibold">
+                  {userList.length} Active Accounts
+                </span>
+              </div>
+              {directoryOpen ? <ChevronUp className="w-4 h-4 text-sky-200" /> : <ChevronDown className="w-4 h-4 text-sky-200" />}
+            </button>
 
-            <div className="grid grid-cols-1 gap-2">
-              {DEMO_USERS.slice(0, 6).map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => handleQuickLogin(user.id)}
-                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition group"
-                >
-                  <div>
-                    <p className="text-xs font-bold text-white">{user.fullName}</p>
-                    <p className="text-[11px] text-sky-200">
-                      {ROLE_LABELS[user.role]}
-                      {user.c3Name ? ` · ${user.c3Name}` : ''}
-                      {user.serviceTeamName ? ` · ${user.serviceTeamName}` : ''}
-                      {user.ministryName ? ` · ${user.ministryName}` : ''}
-                    </p>
-                  </div>
-                  <LogIn className="w-3.5 h-3.5 text-white/50 group-hover:text-white transition" />
-                </button>
-              ))}
-            </div>
-
-            <p className="text-center text-[11px] text-white/40">
-              Demo mode — no real authentication. For production, connect Supabase Auth.
-            </p>
+            {directoryOpen && (
+              <div className="grid grid-cols-1 gap-2 pt-2 max-h-80 overflow-y-auto pr-1">
+                {userList.map((user) => (
+                  <button
+                    key={user.id}
+                    onClick={() => handleQuickLogin(user)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white">{user.fullName}</p>
+                      <p className="text-[11px] text-sky-200">
+                        {ROLE_LABELS[user.role]}
+                        {user.c3Name ? ` · ${user.c3Name}` : ''}
+                        {user.serviceTeamName ? ` · ${user.serviceTeamName}` : ''}
+                        {user.ministryName ? ` · ${user.ministryName}` : ''}
+                      </p>
+                    </div>
+                    <LogIn className="w-3.5 h-3.5 text-white/50 group-hover:text-white transition shrink-0 ml-2" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center pb-6 text-[11px] text-sky-300/50">
-        © {new Date().getFullYear()} Christ Family Ministries · All rights reserved
+      <footer className="text-center pb-6 text-[11px] text-sky-200/60 space-y-1">
+        <p>© {new Date().getFullYear()} Christ Family Centre Makurdi · All rights reserved</p>
+        <p className="text-[10px] text-sky-300/40">Powered by Neon Serverless PostgreSQL & Vercel</p>
       </footer>
     </div>
   );

@@ -60,6 +60,7 @@ interface ChurchContextType {
   generalServices: GeneralServiceReport[];
   metrics: DashboardMetricSummary;
   isLoggedIn: boolean;
+  isAuthChecked: boolean;
   isLoading: boolean;
   switchUser: (userId: string) => void;
   switchRole: (role: UserRole) => void;
@@ -114,6 +115,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
   const [ministryReports, setMinistryReports] = useState<MinistryReport[]>(MOCK_MINISTRY_REPORTS);
   const [generalServices, setGeneralServices] = useState<GeneralServiceReport[]>(MOCK_GENERAL_SERVICES);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // -------------------------------------------------------------------------
@@ -128,7 +130,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       const teamId = user.serviceTeamId || '';
       const ministryId = user.ministryId || '';
 
-      const [c3Res, stRes, minRes, genRes, centresRes, teamsRes, ministriesRes] = await Promise.all([
+      const [c3Res, stRes, minRes, genRes, centresRes, teamsRes, ministriesRes, usersRes] = await Promise.all([
         apiFetch<{ data: C3Report[] }>(`/api/c3-reports?role=${role}&c3Id=${c3Id}`),
         apiFetch<{ data: ServiceTeamReport[] }>(`/api/service-team-reports?role=${role}&teamId=${teamId}`),
         apiFetch<{ data: MinistryReport[] }>(`/api/ministry-reports?role=${role}&ministryId=${ministryId}`),
@@ -136,6 +138,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         apiFetch<{ data: C3Centre[] }>('/api/c3-centres'),
         apiFetch<{ data: ServiceTeam[] }>('/api/service-teams'),
         apiFetch<{ data: MinistryTeam[] }>('/api/ministry-teams'),
+        apiFetch<{ users: UserProfile[] }>('/api/auth').catch(() => ({ users: DEMO_USERS })),
       ]);
 
       setC3Reports(c3Res.data);
@@ -145,6 +148,9 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
       setC3Centres(centresRes.data);
       setServiceTeams(teamsRes.data);
       setMinistryTeams(ministriesRes.data);
+      if (usersRes.users && usersRes.users.length > 0) {
+        setAllUsers(usersRes.users);
+      }
     } catch (err) {
       console.error('Failed to load data from DB, using mock data:', err);
     } finally {
@@ -163,6 +169,9 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         loadFromDB(user);
       }
     } catch { /* ignore */ }
+    finally {
+      setIsAuthChecked(true);
+    }
   }, [loadFromDB]);
 
   // -------------------------------------------------------------------------
@@ -666,6 +675,7 @@ export function ChurchProvider({ children }: { children: React.ReactNode }) {
         generalServices,
         metrics,
         isLoggedIn,
+        isAuthChecked,
         isLoading,
         switchUser,
         switchRole,
